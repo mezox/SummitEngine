@@ -37,4 +37,5 @@ if(PLATFORM_APPLE_MACOS)
 endif()
 
 add_subdirectory(3rdParty)
+add_subdirectory(Engine)
 add_subdirectory(Application)
