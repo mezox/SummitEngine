@@ -1,0 +1,1 @@
+cmake -GXcode -H../ -B../build/macOS
