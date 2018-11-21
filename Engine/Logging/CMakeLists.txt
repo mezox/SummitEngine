@@ -11,11 +11,13 @@ include_directories(
 set(PRIVATE_SOURCES
 	Private/Logging/Logger.cpp
 	Private/Logging/Severity.cpp
+	Private/Logging/Appender.cpp
 )
 
 set(PUBLIC_SOURCES
 	Public/Logging/Logger.h
 	Public/Logging/Severity.h
+	Public/Logging/Appender.h
 )
 
 # platform dependant settings
