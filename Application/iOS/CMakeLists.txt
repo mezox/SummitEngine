@@ -11,9 +11,9 @@ set(APPLICATION_HEADERS
 )
 
 set(APPLICATION_SRCS
-   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.m
-   ${CMAKE_CURRENT_SOURCE_DIR}/src/AppDelegate.m
-   ${CMAKE_CURRENT_SOURCE_DIR}/src/ViewController.m
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.mm
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/AppDelegate.mm
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/ViewController.mm
 )
 
 set(APPLICATION_RESOURCES

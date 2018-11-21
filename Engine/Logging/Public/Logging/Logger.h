@@ -9,7 +9,7 @@
 
 namespace Logging
 {
-    class AppenderBase;
+    class WriterBase;
     
     class Logger
     {
@@ -17,13 +17,13 @@ namespace Logging
         Logger();
         ~Logger();
         
-        void Log(const std::string& msg, const Severity severity);
+        void Log(const std::string& msg, const uint32_t channel, const Severity severity);
         
-        void AddAppender(std::unique_ptr<AppenderBase> appender);
+        void AddWriter(std::unique_ptr<WriterBase> writer);
         void Reset();
         
     private:
         std::mutex mMutex;
-        std::vector<std::unique_ptr<AppenderBase>> mAppenders;
+        std::vector<std::unique_ptr<WriterBase>> mWriters;
     };
 }

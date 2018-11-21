@@ -1,5 +1,5 @@
 #include <Logging/Logger.h>
-#include <Logging/Appender.h>
+#include <Logging/Writer.h>
 
 #include <iostream>
 #include <algorithm>
@@ -9,23 +9,23 @@ namespace Logging
     Logger::Logger() = default;
     Logger::~Logger() = default;
     
-    void Logger::Log(const std::string& msg, const Severity severity)
+    void Logger::Log(const std::string& msg, const uint32_t channel, const Severity severity)
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        for(auto& appender : mAppenders)
+        for(auto& writer : mWriters)
         {
-            appender->Log(msg, severity);
+            writer->Log(msg, channel, severity);
         }
     }
     
-    void Logger::AddAppender(std::unique_ptr<AppenderBase> appender)
+    void Logger::AddWriter(std::unique_ptr<WriterBase> writer)
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        mAppenders.push_back(std::move(appender));
+        mWriters.push_back(std::move(writer));
     }
     
     void Logger::Reset()
     {
-        mAppenders.clear();
+        mWriters.clear();
     }
 }
