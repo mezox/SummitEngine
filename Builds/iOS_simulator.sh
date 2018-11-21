@@ -1,0 +1,1 @@
+cmake -GXcode -H../ -B../build/simulator -DCMAKE_TOOLCHAIN_FILE=Builds/cmake/ios.toolchain.cmake -DIOS_PLATFORM=SIMULATOR64 -DCODESIGNIDENTITY_DEVEL="iPhone Developer" -DCODESIGNIDENTITY_DISTRIBUTION='iOS Developer'

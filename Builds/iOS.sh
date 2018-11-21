@@ -1,0 +1,1 @@
+cmake -GXcode -H../ -B../build/ios_arm -DCMAKE_TOOLCHAIN_FILE=Builds/cmake/ios.toolchain.cmake -DIOS_PLATFORM=OS64 -DCODESIGNIDENTITY_DEVEL="iPhone Developer" -DCODESIGNIDENTITY_DISTRIBUTION='iPhone Developer'
