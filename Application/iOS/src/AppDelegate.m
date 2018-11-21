@@ -8,6 +8,10 @@
 
 #import "AppDelegate.h"
 
+#include <Logging/Logger.h>
+
+Logging::Logger logger;
+
 @interface AppDelegate ()
 
 @end
@@ -40,6 +44,8 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+    
+    logger.Log("Application become active", Logging::Severity::Information);
 }
 
 

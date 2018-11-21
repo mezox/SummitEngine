@@ -1,7 +1,7 @@
 #include <Logging/Appender.h>
 
 namespace Logging
-{
+{    
     void AppenderBase::SetMinSeverity(const Severity severity)
     {
         mMinSeverity = severity;
