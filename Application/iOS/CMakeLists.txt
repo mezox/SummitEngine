@@ -26,7 +26,7 @@ add_executable(${PROJECT_NAME} MACOSX_BUNDLE
 	${APPLICATION_SRCS}
 	${APPLICATION_RESOURCES})
 
-target_link_libraries(Application "-framework UIKit" Logging)
+target_link_libraries(Application "-framework UIKit" Logging Engine)
 
 set_target_properties(Application PROPERTIES
    MACOSX_BUNDLE TRUE

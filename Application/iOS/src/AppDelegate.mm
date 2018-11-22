@@ -9,8 +9,17 @@
 #import "AppDelegate.h"
 
 #include <Logging/Logger.h>
+#include <Logging/ConsoleWriter.h>
 
-Logging::Logger logger;
+#include <Engine/Engine.h>
+
+MLOG_SINIT("Application")
+
+#ifdef LOG_MODULE_ID
+#undef LOG_MODULE_ID
+#endif
+
+#define LOG_MODULE_ID LOG_MODULE_4BYTE('S','A','P','P')
 
 @interface AppDelegate ()
 
@@ -21,6 +30,12 @@ Logging::Logger logger;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
+    
+    auto consoleWriterService = std::make_unique<Logging::ConsoleWriter>("", "");
+    Logging::Logger::getLogger().AddWriter(std::move(consoleWriterService));
+    
+    Engine::EngineServiceLocator::Provide(Engine::CreateEngineService());
+    
     return YES;
 }
 
@@ -45,7 +60,7 @@ Logging::Logger logger;
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
     
-    logger.Log("Application become active", 0, Logging::Severity::Information);
+    LOG_INFORMATION("Application become active")
 }
 
 
