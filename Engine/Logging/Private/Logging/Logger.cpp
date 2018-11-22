@@ -6,7 +6,11 @@
 
 namespace Logging
 {
-    Logger::Logger() = default;
+    Logger::Logger(const std::string& componentName)
+        : mComponentName(componentName)
+    {
+    }
+    
     Logger::~Logger() = default;
     
     void Logger::Log(const std::string& msg, const uint32_t channel, const Severity severity)
@@ -14,7 +18,7 @@ namespace Logging
         std::lock_guard<std::mutex> lock(mMutex);
         for(auto& writer : mWriters)
         {
-            writer->Log(msg, channel, severity);
+            writer->Log(msg, channel, severity, mComponentName);
         }
     }
     

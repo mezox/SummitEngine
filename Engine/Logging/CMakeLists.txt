@@ -12,12 +12,17 @@ set(PRIVATE_SOURCES
 	Private/Logging/Logger.cpp
 	Private/Logging/Severity.cpp
 	Private/Logging/Writer.cpp
+    Private/Logging/ConsoleWriter.cpp
+    Private/Logging/FileWriter.cpp
 )
 
 set(PUBLIC_SOURCES
 	Public/Logging/Logger.h
 	Public/Logging/Severity.h
+    Public/Logging/Tokens.h
 	Public/Logging/Writer.h
+    Public/Logging/FileWriter.h
+    Public/Logging/ConsoleWriter.h
 )
 
 # platform dependant settings
