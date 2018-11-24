@@ -7,17 +7,20 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(APPLICATION_HEADERS
    ${CMAKE_CURRENT_SOURCE_DIR}/include/AppDelegate.h
+   ${CMAKE_CURRENT_SOURCE_DIR}/include/SummitView.h
+   ${CMAKE_CURRENT_SOURCE_DIR}/include/SummitWindow.h
    ${CMAKE_CURRENT_SOURCE_DIR}/include/ViewController.h
 )
 
 set(APPLICATION_SRCS
    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.m
-   ${CMAKE_CURRENT_SOURCE_DIR}/src/AppDelegate.m
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/SummitView.mm
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/SummitWindow.mm
+   ${CMAKE_CURRENT_SOURCE_DIR}/src/AppDelegate.mm
    ${CMAKE_CURRENT_SOURCE_DIR}/src/ViewController.m
 )
 
 set(APPLICATION_RESOURCES
-   ${CMAKE_CURRENT_SOURCE_DIR}/resources/Main.storyboard
 )
 
 add_executable(Application MACOSX_BUNDLE
@@ -25,7 +28,7 @@ add_executable(Application MACOSX_BUNDLE
 	${APPLICATION_SRCS}
 	${APPLICATION_RESOURCES})
 
-target_link_libraries(Application "-framework AppKit")
+target_link_libraries(Application "-framework AppKit" Logging Engine)
 
 set_target_properties(Application PROPERTIES
    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/Info.plist

@@ -11,15 +11,15 @@
 #include <Logging/Logger.h>
 #include <Logging/ConsoleWriter.h>
 
-#include <Engine/Engine.h>
-
 MLOG_SINIT("Application")
+
+#include <Engine/Engine.h>
 
 #ifdef LOG_MODULE_ID
 #undef LOG_MODULE_ID
 #endif
 
-#define LOG_MODULE_ID LOG_MODULE_4BYTE('S','A','P','P')
+#define LOG_MODULE_ID LOG_MODULE_4BYTE(' ','A','P','P')
 
 @interface AppDelegate ()
 

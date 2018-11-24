@@ -7,11 +7,15 @@
 //
 
 #import "ViewController.h"
+#import "SummitView.h"
 
 @implementation ViewController
 
 - (void)viewDidLoad {
+    
     [super viewDidLoad];
+//    SummitRenderView* SUView = [[SummitRenderView alloc] init];
+//    self.view = SUView;
 
     // Do any additional setup after loading the view.
 }
