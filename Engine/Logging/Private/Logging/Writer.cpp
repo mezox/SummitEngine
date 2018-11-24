@@ -5,15 +5,27 @@
 
 namespace
 {
+    const char* tokenStrings[] =
+    {
+        "DTI",
+        "STI",
+        "CHN",
+        "MID",
+        "SEV",
+        "MNM",
+        "CLK",
+        "MSG",
+    };
+    
     Logging::Token StringToToken(const std::string& str)
     {
         std::string upperCase;
         std::transform(str.begin(), str.end(), std::back_inserter(upperCase), ::toupper);
         
-        size_t len = sizeof(Logging::tokenStrings) / sizeof(char*);
+        size_t len = sizeof(tokenStrings) / sizeof(char*);
         
         for (int i = 0; i < len; i++) {
-            if (Logging::tokenStrings[i] == str)
+            if (tokenStrings[i] == str)
             {
                 return static_cast<Logging::Token>(i);
             }

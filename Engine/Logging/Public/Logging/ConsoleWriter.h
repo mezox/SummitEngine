@@ -1,10 +1,11 @@
 #pragma once
 
+#include "LoggingBase.h"
 #include "Writer.h"
 
 namespace Logging
 {
-    class ConsoleWriter : public WriterBase
+    class LOGGING_API ConsoleWriter : public WriterBase
     {
     public:
         ConsoleWriter(std::string format, std::string timeFormat);

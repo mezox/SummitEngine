@@ -6,20 +6,28 @@
 
 namespace Logging
 {
-    Logger::Logger(const std::string& componentName)
-        : mComponentName(componentName)
+    Logger::Logger(std::string name)
+        : mName(std::move(name))
     {
     }
     
-    Logger::~Logger() = default;
+    Logger::~Logger()
+    {
+        Reset();
+    }
     
     void Logger::Log(const std::string& msg, const uint32_t channel, const Severity severity)
     {
         std::lock_guard<std::mutex> lock(mMutex);
         for(auto& writer : mWriters)
         {
-            writer->Log(msg, channel, severity, mComponentName);
+            writer->Log(msg, channel, severity, mName);
         }
+    }
+    
+    const std::string& Logger::GetName() const noexcept
+    {
+        return mName;
     }
     
     void Logger::AddWriter(std::unique_ptr<WriterBase> writer)

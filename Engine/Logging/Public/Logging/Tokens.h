@@ -14,16 +14,4 @@ namespace Logging
         MSG, //message itself
         STR
     };
-    
-    const char* tokenStrings[] =
-    {
-        "DTI",
-        "STI",
-        "CHN",
-        "MID",
-        "SEV",
-        "MNM",
-        "CLK",
-        "MSG",
-    };
 }

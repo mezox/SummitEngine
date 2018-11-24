@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.5.0)
 
 project(Logging)
 
+if (${BUILD_SHARED_LIBS})
+	add_definitions("-D_LOGGING_EXPORT")
+endif()
+
 include_directories(
 	"Public"
 	"Private"
@@ -9,6 +13,8 @@ include_directories(
 
 # platform agnostic source files
 set(PRIVATE_SOURCES
+	Private/Logging/LoggingServiceImpl.h
+	Private/Logging/LoggingServiceImpl.cpp
 	Private/Logging/Logger.cpp
 	Private/Logging/Severity.cpp
 	Private/Logging/Writer.cpp
@@ -17,6 +23,8 @@ set(PRIVATE_SOURCES
 )
 
 set(PUBLIC_SOURCES
+    Public/Logging/LoggingBase.h
+    Public/Logging/LoggingService.h
 	Public/Logging/Logger.h
 	Public/Logging/Severity.h
     Public/Logging/Tokens.h
