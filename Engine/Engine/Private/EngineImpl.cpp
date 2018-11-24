@@ -1,8 +1,8 @@
 #include "EngineImpl.h"
 
+#include <Logging/LoggingService.h>
 #include <Logging/Logger.h>
-
-MLOG_SINIT("Engine")
+#include <Logging/ConsoleWriter.h>
 
 #ifdef LOG_MODULE_ID
 #undef LOG_MODULE_ID
@@ -21,7 +21,14 @@ std::shared_ptr<IEngine> Engine::CreateEngineService()
 
 SummitEngine::SummitEngine()
 {
-    LOG_INFORMATION("Created Engine!")
+    Logging::LoggingServiceLocator::Provide(Logging::CreateLoggingService());
+    
+    auto consoleWriterService = std::make_unique<Logging::ConsoleWriter>("", "");
+    auto engineLogger = std::make_unique<Logging::Logger>("Engine");
+    engineLogger->AddWriter(std::move(consoleWriterService));
+    Logging::LoggingServiceLocator::Service()->AddLogger(std::move(engineLogger));
+    
+    LOG_INFORMATION("Created SummitEngine!")
 }
 
 void SummitEngine::Initialize()

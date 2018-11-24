@@ -1,10 +1,11 @@
 #pragma once
 
+#include "EngineBase.h"
 #include <memory>
 
 namespace Engine
 {
-	class IEngine
+	class ENGINE_API IEngine
 	{
 	public:
 		virtual ~IEngine() = default;
@@ -16,9 +17,9 @@ namespace Engine
         virtual void DeInitialize() = 0;
 	};
 
-    std::shared_ptr<IEngine> CreateEngineService();
+    ENGINE_API std::shared_ptr<IEngine> CreateEngineService();
 
-	class EngineServiceLocator
+	class ENGINE_API EngineServiceLocator
 	{
 	public:
 		static void Provide(std::shared_ptr<IEngine> service)

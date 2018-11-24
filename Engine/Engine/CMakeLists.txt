@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.5.0)
 
 project(Engine)
 
+if (${BUILD_SHARED_LIBS})
+	add_definitions("-D_ENGINE_EXPORT")
+endif()
+
 include_directories(
 	"Public"
 	"Private"
@@ -14,6 +18,7 @@ set(PRIVATE_SOURCES
 )
 
 set(PUBLIC_SOURCES
+	Public/Engine/EngineBase.h
 	Public/Engine/Engine.h
 )
 
