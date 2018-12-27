@@ -1,7 +1,6 @@
 #import "SummitWindow.h"
 
 @implementation SummitWindowDelegate
-
 - (BOOL)windowShouldClose:(id)sender
 {
     return NO;
@@ -29,7 +28,6 @@
 @end
 
 @implementation SummitWindow
-
 - (BOOL)canBecomeKeyWindow
 {
     // Required for NSWindowStyleMaskBorderless windows
@@ -39,6 +37,13 @@
 - (BOOL)canBecomeMainWindow
 {
     return YES;
+}
+
+- (void)mouseMoved:(NSEvent *)event
+{
+//    //LOG_INFORMATION("Mouse moved")
+//    NSPoint locationInView = [event locationInWindow];
+//    NSLog(@"mouseMoved: %f %f", locationInView.x, locationInView.y);
 }
 
 @end

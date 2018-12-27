@@ -9,9 +9,6 @@
 #import "AppDelegate.h"
 
 #include <Logging/Logger.h>
-#include <Logging/ConsoleWriter.h>
-
-MLOG_SINIT("Application")
 
 #include <Engine/Engine.h>
 
@@ -31,10 +28,15 @@ MLOG_SINIT("Application")
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    auto consoleWriterService = std::make_unique<Logging::ConsoleWriter>("", "");
-    Logging::Logger::getLogger().AddWriter(std::move(consoleWriterService));
+//    auto consoleWriterService = std::make_unique<Logging::ConsoleWriter>("", "");
+//    Logging::Logger::getLogger().AddWriter(std::move(consoleWriterService));
     
     Engine::EngineServiceLocator::Provide(Engine::CreateEngineService());
+
+    //Logging::LoggingServiceLocator::Service()->AddLogger(std::move(appLogger));
+    //LOG_INFORMATION << "SummitApp did finish launching!";
+    
+    Engine::EngineServiceLocator::Service()->Initialize();
     
     return YES;
 }
@@ -60,7 +62,7 @@ MLOG_SINIT("Application")
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
     
-    LOG_INFORMATION("Application become active")
+    //LOG_INFORMATION("Application become active")
 }
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Engine.h>
+#include "Window.h"
 
 namespace Engine
 {
@@ -14,5 +15,9 @@ namespace Engine
 		virtual void Update() override;
 		virtual void EndFrame() override;
         virtual void DeInitialize() override;
+        
+    private:
+        std::unique_ptr<App::Window> mWindow;
+        std::unique_ptr<App::Window> mSecondWindow;
 	};
 }
