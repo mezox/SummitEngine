@@ -1,8 +1,6 @@
+#include <Logging/pch.h>
 #include <Logging/Logger.h>
 #include <Logging/Writer.h>
-
-#include <iostream>
-#include <algorithm>
 
 namespace Logging
 {
@@ -39,5 +37,19 @@ namespace Logging
     void Logger::Reset()
     {
         mWriters.clear();
+    }
+    
+    Composer::Composer(Logger& logger, const uint32_t channel, const uint32_t module, const Severity severity)
+        : mLogger(logger)
+        , mChannel(channel)
+        , mModule(module)
+        , mSeverity(severity)
+    {
+        
+    }
+    
+    Composer::~Composer()
+    {
+        mLogger.Log(mOutputStream.str(), mModule, mSeverity);
     }
 }

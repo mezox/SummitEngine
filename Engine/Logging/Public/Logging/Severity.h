@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
 namespace Logging
 {
     enum class Severity : uint8_t

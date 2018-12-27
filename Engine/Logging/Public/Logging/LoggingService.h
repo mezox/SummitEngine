@@ -2,18 +2,12 @@
 
 #include "LoggingBase.h"
 #include "Logger.h"
-#include <memory>
-#include <string>
-#include <sstream>
 
-#define LOG_MSG_MODULE(m, id, severity) \
-std::ostringstream ostr; \
-ostr << m << std::endl; \
-auto logger = Logging::LoggingServiceLocator::Service()->GetLogger(LOGGER_ID); \
-if(logger) \
-    logger->Log(ostr.str(), id, severity);
+#define LOG_MSG_MODULE(id, severity) \
+    if(Logging::LoggingServiceLocator::Service()->GetLogger(LOGGER_ID)) \
+        Logging::Composer(*Logging::LoggingServiceLocator::Service()->GetLogger(LOGGER_ID), 0, id, severity)
 
-#define LOG_INFORMATION(m) LOG_MSG_MODULE(m, LOG_MODULE_ID, Logging::Severity::Information)
+#define LOG(severity) LOG_MSG_MODULE(LOG_MODULE_ID, Logging::Severity::Information)
 
 /// 4 byte composed of chars can be used to identify module like id = LOG_MODULE_4BYTE('C','O','R','E')
 #define LOG_MODULE_4BYTE(b1,b2,b3,b4) ((int)(b1) + ((int)(b2) << 8) + ((int)(b3) << 16) + ((int)(b4) << 24))
@@ -30,7 +24,7 @@ if(logger) \
 
 /// Default module id, can be re-defined for each module. Define only if not previously defined!
 #ifndef LOGGER_ID
-#define LOGGER_ID "Engine"
+#define LOGGER_ID "SummitEngine"
 #endif
 
 namespace Logging
@@ -39,6 +33,16 @@ namespace Logging
 	{
 	public:
 		virtual ~ILoggingService() = default;
+        
+        /**
+         * @brief   Initializes logging service.
+         */
+        virtual void Initialize() = 0;
+        
+        /**
+         * @brief   Deinitializes logging service.
+         */
+        virtual void Deinitialize() = 0;
 
         /**
          * @brief   Returns logger by its name.
@@ -66,16 +70,26 @@ namespace Logging
 	class LOGGING_API LoggingServiceLocator
 	{
 	public:
+        /**
+         * @brief   Initializes service locator with service.
+         * @param   service Logging service
+         */
 		static void Provide(std::shared_ptr<ILoggingService> service)
 		{
 			mService = std::move(service);
 		}
 
+        /**
+         * @brief   Returns logging service if active, nullptr otherwise.
+         */
 		static std::shared_ptr<ILoggingService> Service()
 		{
 			return mService;
 		}
 
+        /**
+         * @brief   Queries availability of logging service.
+         */
 		static bool Available()
 		{
 			return !mService;

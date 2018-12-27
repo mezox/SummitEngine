@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LoggingBase.h"
+#include <Logging/LoggingBase.h>
 #include "Writer.h"
 
 namespace Logging

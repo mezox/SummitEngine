@@ -1,3 +1,4 @@
+#include <Logging/pch.h>
 #include <Logging/Severity.h>
 
 namespace Logging

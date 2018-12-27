@@ -1,7 +1,5 @@
+#include <Logging/pch.h>
 #include <Logging/Writer.h>
-
-#include <ctime>
-#include <algorithm>
 
 namespace
 {
@@ -40,7 +38,7 @@ namespace Logging
         : mFormat(std::move(format))
         , mTimeFormat(std::move(timeFormat))
     {
-        ParseTokens("%DTI [%MID:%SEV] \"%MNM\" %MSG");
+        ParseTokens(mFormat);
     }
     
     void WriterBase::SetMinSeverity(const Severity severity)
@@ -53,10 +51,11 @@ namespace Logging
         return mMinSeverity;
     }
     
-    void WriterBase::WriteMessage(std::ostream& stream, const std::string& msg, const uint32_t channel, const Severity severity, const std::string& component)
+    std::string WriterBase::FormatMessage(const std::string& msg, const uint32_t channel, const Severity severity, const std::string& component)
     {
         auto its = mFormatStrings.begin();
         
+        std::stringstream stream;
         for (auto t : mTokens)
         {
             switch (t)
@@ -97,6 +96,7 @@ namespace Logging
         }
         
         stream.flush();
+        return stream.str();
     }
     
     void WriterBase::WriteSeverity(std::ostream& stream, const Severity severity)
@@ -129,7 +129,7 @@ namespace Logging
         time_t now = time(NULL);
         char   buff[32];
         
-        strftime(buff, sizeof(buff), "%d-%m-%Y %H:%M:%S", localtime(&now));
+        strftime(buff, sizeof(buff), mTimeFormat.c_str(), localtime(&now));
         stream << buff;
     }
     
@@ -175,5 +175,8 @@ namespace Logging
                 stuffStr += ch;
             }
         }
+        
+        mTokens.push_back(Logging::Token::STR);
+        mFormatStrings.push_back("\n");
     }
 }

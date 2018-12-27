@@ -1,6 +1,5 @@
+#include <Logging/pch.h>
 #include <Logging/ConsoleWriter.h>
-
-#include <iostream>
 
 namespace Logging
 {
@@ -12,6 +11,6 @@ namespace Logging
     
     void ConsoleWriter::Log(const std::string &msg, const uint32_t channel, const Severity severity, const std::string& component)
     {
-        WriteMessage(std::cout, msg, channel, severity, component);
+        std::cout << FormatMessage(msg, channel, severity, component);
     }
 }
