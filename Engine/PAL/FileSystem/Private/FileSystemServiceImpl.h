@@ -13,7 +13,7 @@ namespace PAL::FileSystem
         ~FileSystemServiceImpl();
         
         void Initialize() override;
-        FileHandle FileOpen(const std::string& filePath, EFileAccessMode mode) const override;
+        FileHandle FileOpen(const std::filesystem::path& filePath, EFileAccessMode mode) const override;
         void FileClose(FileHandle handle) const override;
         void FileFlush(FileHandle handle) const override;
         

@@ -4,12 +4,16 @@ project(SummitEngineApp)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(ENABLE_CLANG_TIDY ON)
+set(ENABLE_CLANG_TIDY OFF)
 
 if (CMAKE_GENERATOR STREQUAL Xcode)
 	macro(target_set_precompiled_header target pch pcs)
 		set_property(TARGET ${target} PROPERTY XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER YES)
 		set_property(TARGET ${target} PROPERTY XCODE_ATTRIBUTE_GCC_PREFIX_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/${pch}")
+		target_compile_definitions(${target} PRIVATE -DUSE_PCH)
+	endmacro(target_set_precompiled_header)
+else()
+	macro(target_set_precompiled_header target pch pcs)
 		target_compile_definitions(${target} PRIVATE -DUSE_PCH)
 	endmacro(target_set_precompiled_header)
 endif()
@@ -52,9 +56,17 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 		endforeach()
 	endmacro()
 
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+	set(PLATFORM_WINDOWS ON)
+	set(BUILD_SHARED_LIBS ON)
+
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
 else()
 	message(FATAL_ERROR "Unsupported platform! SummitEngine supports only macOS")
 endif()
+
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/Bin/${CMAKE_BUILD_TYPE} CACHE PATH "Library output path")
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/Bin/${CMAKE_BUILD_TYPE} CACHE PATH "Executable output path")
 
 # Architecture detection
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -75,12 +87,23 @@ if(PLATFORM_APPLE_MACOS)
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fobjc-abi-version=2 -fobjc-arc")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -stdlib=libc++ -fobjc-abi-version=2 -fobjc-arc")
+
+    if (${BUILD_SHARED_LIBS})
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+	endif()
 endif()
 
-if (${BUILD_SHARED_LIBS})
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
-endif()
+set(SummitEngineDir ${CMAKE_CURRENT_SOURCE_DIR})
+
+macro(configure_platform_file project_name local_path public_sources)
+	string(TOUPPER ${project_name} MODULE_NAME)
+	configure_file(${SummitEngineDir}/ModuleBase.h.in ${CMAKE_CURRENT_SOURCE_DIR}/${local_path}/${PROJECT_NAME}Base.h @ONLY)
+	list(APPEND ${public_sources} ${CMAKE_CURRENT_SOURCE_DIR}/${local_path}/${PROJECT_NAME}Base.h)
+endmacro(configure_platform_file)
 
 add_subdirectory(3rdParty)
 add_subdirectory(Engine)
 add_subdirectory(Application)
+
+add_executable(TestApp main.cpp)
+target_link_libraries(TestApp doctest FileSystem)

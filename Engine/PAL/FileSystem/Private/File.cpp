@@ -3,7 +3,7 @@
 
 using namespace PAL::FileSystem;
 
-File::File(const std::string& path)
+File::File(const std::filesystem::path& path)
 : mPath(path)
 {
     
@@ -91,7 +91,7 @@ uint32_t File::Write(void* data, uint32_t bytesToWrite) const
 void File::Flush() const
 {
     if(!FileSystemServiceLocator::Available())
-        return 0;
+        return;
     
     FileSystemServiceLocator::Service()->FileFlush(mHandle);
 }

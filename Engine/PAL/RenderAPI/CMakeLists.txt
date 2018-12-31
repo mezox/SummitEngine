@@ -16,17 +16,19 @@ include_directories(
 
 # platform agnostic source files
 set(PRIVATE_SOURCES
-	Private/Metal/MetalAPIImpl.h
-	Private/Vulkan/VulkanAPIImpl.h
 	Private/Vulkan/VulkanLoaderHelper.h
-	Private/Vulkan/VulkanDebug.inl
+	Private/Vulkan/VulkanDevice.cpp
 
-	Private/RenderAPIFactory.cpp
+	Private/Vulkan/VulkanSwapChainImpl.h
+	Private/Vulkan/VulkanSwapChainImpl.cpp
+
+	Private/Vulkan/VulkanImplAny.cpp
 )
 
 set(PUBLIC_SOURCES
-	Public/PAL/RenderAPI/RenderAPIBase.h
-	Public/PAL/RenderAPI/RenderAPIService.h
+	Public/PAL/RenderAPI/SwapChain.h
+	Public/PAL/RenderAPI/VulkanAPI.h
+	Public/PAL/RenderAPI/VulkanDevice.h
 )
 
 # Platform agnostic dependencies
@@ -43,8 +45,8 @@ if (PLATFORM_APPLE_MACOS)
 	add_definitions("-DVK_USE_PLATFORM_MACOS_MVK")
 
 	set(OBJECTIVE_C_SOURCES
+		Private/Metal/MetalAPIImpl.h
 		Private/Metal/MetalAPIImpl.cpp
-		Private/Vulkan/VulkanAPIImpl.cpp
 	)
 
 	list(APPEND PRIVATE_SOURCES
@@ -60,8 +62,8 @@ elseif (PLATFORM_APPLE_IOS)
 	add_definitions("-DVK_USE_PLATFORM_IOS_MVK")
 
 	set(OBJECTIVE_C_SOURCES
+		Private/Metal/MetalAPIImpl.h
 		Private/Metal/MetalAPIImpl.cpp
-		Private/Vulkan/VulkanAPIImpl.cpp
 	)
 
 	list(APPEND PRIVATE_SOURCES
@@ -70,11 +72,20 @@ elseif (PLATFORM_APPLE_IOS)
 
 	set_objective_c_compilation(${OBJECTIVE_C_SOURCES})
 
-    set(PLATFORM_INTERFACES
+	list(APPEND DEPENDENCIES
+		"-framework Metal"
+	)
+elseif(PLATFORM_WINDOWS)
+	add_definitions("-DVK_USE_PLATFORM_WIN32_KHR")
 
-    )
+	list(APPEND PRIVATE_SOURCES
+		Private/Vulkan/VulkanImplWin32.cpp
+		Private/Vulkan/VulkanImplWin32.h
+	)
 endif()
 
+configure_platform_file(${PROJECT_NAME} Public/PAL/RenderAPI "${PUBLIC_SOURCES}")
+
 add_library(${PROJECT_NAME} ${PUBLIC_SOURCES} ${PRIVATE_SOURCES})
-target_link_libraries(${PROJECT_NAME} Core Logging "-framework Metal" Vulkan::Vulkan ${DEPENDENCIES})
+target_link_libraries(${PROJECT_NAME} Core Logging Vulkan::Vulkan ${DEPENDENCIES})
 target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Public/ ${PLATFORM_INTERFACES})

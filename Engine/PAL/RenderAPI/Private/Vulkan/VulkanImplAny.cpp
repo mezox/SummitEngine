@@ -1,12 +1,12 @@
-#include <Vulkan/VulkanAPIImpl.h>
+#include <PAL/RenderAPI/VulkanAPI.h>
+#include <PAL/RenderAPI/VulkanDevice.h>
 #include <Vulkan/VulkanLoaderHelper.h>
-#include <Vulkan/VulkanDebug.inl>
 #include <Logging/LoggingService.h>
 #include <PAL/FileSystem/File.h>
 #include <nlohmann/json.hpp>
 
-#include <dlfcn.h>
 #include <cstring>
+#include <memory>
 
 #ifdef LOG_MODULE_ID
 #undef LOG_MODULE_ID
@@ -14,11 +14,9 @@
 
 #define LOG_MODULE_ID LOG_MODULE_4BYTE('V','L','K',' ')
 
-#ifndef _WIN32
-#define GetProcAddress dlsym
-#endif
-
 using json = nlohmann::json;
+
+using namespace PAL::FileSystem;
 
 namespace
 {
@@ -135,41 +133,28 @@ namespace PAL::RenderAPI
         return "Unknow error";
     }
     
-    std::shared_ptr<IRenderAPI> CreateRenderAPI()
-    {
-        return std::make_shared<VulkanRenderAPI>();
-    }
-    
-    class VulkanDevice: public IDevice
-    {
-    public:
-        
-    public:
-    };
-    
     VulkanRenderAPI::~VulkanRenderAPI()
-    {}
+    {
+		DeInitialize();
+	}
     
     VulkanRenderAPI::VulkanRenderAPI()
-    {}
+    {
+	}
     
     void VulkanRenderAPI::Initialize()
     {
-        using namespace PAL::FileSystem;
-        
-        mVulkanLibrary = dlopen("libvulkan.dylib", RTLD_NOW | RTLD_LOCAL);
-        if (!mVulkanLibrary)
-        {
-            LOG(Warning) << "Could not load Vulkan library!";
-            return;
-        }
-        
+		if (mIsInitialized)
+			return;
+
+		PlatformInitialize();
         LoadGlobalFunctions();
         
-        mAvailableInstanceExtensions = QueryInstanceExtensions();
-        mAvailableInstanceLayers = QueryInstanceLayers();
+        mAvailableInstanceExtensions = EnumerateInstanceExtensionProperties();
+        mAvailableInstanceLayers = EnumerateInstanceLayerProperties();
         
-        File configFile("/Users/tomaskubovcik/Dev/SummitEngine/vk_config.json");
+        //File configFile("/Users/tomaskubovcik/Dev/SummitEngine/vk_config.json");
+		File configFile("C:/Users/Tomas/Dev/SummitEngine/vk_config.json");
         configFile.Open(EFileAccessMode::Read);
         if(configFile.IsOpened())
         {
@@ -204,7 +189,7 @@ namespace PAL::RenderAPI
         LoadInstanceFunctions();
         LoadInstanceExtensions();
         
-        if(IsExtensionEnabled(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+        if(IsExtensionEnabled(VK_EXT_DEBUG_UTILS_EXTENSION_NAME) && !mEnabledInstanceValidationLayers.empty())
         {
             VkDebugUtilsMessengerCreateInfoEXT debugUtilsInfo;
             debugUtilsInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -216,22 +201,8 @@ namespace PAL::RenderAPI
             
             VK_CHECK_RESULT(vkCreateDebugUtilsMessengerEXT(mInstance, &debugUtilsInfo, nullptr, &mCallback));
         }
-        
-        mPhysicalDevices = QueryPhysicalDevices();
-        
-        LOG(Information) << "Available " << mPhysicalDevices.size() << " GPU devices:";
-        
-        for (const auto& device : mPhysicalDevices)
-        {
-            VkPhysicalDeviceProperties deviceProperties;
-            vkGetPhysicalDeviceProperties(device, &deviceProperties);
-            
-            LOG(Information) << deviceProperties.deviceName
-            << ", supported vulkan API version: "
-            << VK_VERSION_MAJOR(deviceProperties.apiVersion) << "."
-            << VK_VERSION_MAJOR(deviceProperties.apiVersion) << "."
-            << VK_VERSION_PATCH(deviceProperties.apiVersion);
-        }
+
+		mIsInitialized = true;
     }
     
     void VulkanRenderAPI::DeInitialize()
@@ -242,27 +213,62 @@ namespace PAL::RenderAPI
         mEnabledInstanceValidationLayers.clear();
         
         vkDestroyInstance(mInstance, nullptr);
-        dlclose(mVulkanLibrary);
+		PlatformDeinitialize();
+
+		mIsInitialized = false;
     }
 
     bool VulkanRenderAPI::IsExtensionEnabled(const char* extensionName) const
     {
-        return std::find(mEnabledInstanceExtensions.begin(), mEnabledInstanceExtensions.end(), extensionName) != mEnabledInstanceExtensions.end();
+		return std::find_if(mEnabledInstanceExtensions.begin(), mEnabledInstanceExtensions.end(), [extensionName](const char* ext) {
+			return strcmp(extensionName, ext) == 0;
+		}) != mEnabledInstanceExtensions.end();
     }
+
+	std::vector<VkQueueFamilyProperties> VulkanRenderAPI::GetPhysicalDeviceQueueFamilyProperties(const VkPhysicalDevice& device) const
+	{
+		uint32_t queuePropertyCount{ 0 };
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queuePropertyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueProperties(queuePropertyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queuePropertyCount, queueProperties.data());
+
+		return queueProperties;
+	}
+
+	VkPhysicalDeviceFeatures VulkanRenderAPI::GetPhysicalDeviceFeatures(const VkPhysicalDevice& physicalDevice) const
+	{
+		VkPhysicalDeviceFeatures features{ VK_NULL_HANDLE };
+		vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+		return features;
+	}
+
+	VkPhysicalDeviceProperties VulkanRenderAPI::GetPhysicalDeviceProperties(const VkPhysicalDevice& physicalDevice) const
+	{
+		VkPhysicalDeviceProperties properties{ VK_NULL_HANDLE };
+		vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+		return properties;
+	}
+
+	VkDevice VulkanRenderAPI::CreateDevice(const VkPhysicalDevice & physicalDevice, const VkDeviceCreateInfo & createInfo) const
+	{
+		VkDevice device{ VK_NULL_HANDLE };
+		VK_CHECK_RESULT(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
+		return device;
+	}
+
+	void VulkanRenderAPI::DestroySurface(const VkSurfaceKHR& surface) const
+	{
+		vkDestroySurfaceKHR(mInstance, surface, nullptr);
+	}
     
     void VulkanRenderAPI::OnDeviceConnected()
     {
-        mPhysicalDevices = QueryPhysicalDevices();
+        //mPhysicalDevices = QueryPhysicalDevices();
     }
     
     void VulkanRenderAPI::LoadGlobalFunctions()
     {
-        vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetProcAddress(mVulkanLibrary, "vkGetInstanceProcAddr");
-        if(!vkGetInstanceProcAddr)
-        {
-            throw no_entry_point_func("vkGetInstanceProcAddr not found!");
-        }
-        
         LOAD_VK_GLOBAL_LEVEL_FUNCTION(vkCreateInstance);
         LOAD_VK_GLOBAL_LEVEL_FUNCTION(vkEnumerateInstanceExtensionProperties);
         LOAD_VK_GLOBAL_LEVEL_FUNCTION(vkEnumerateInstanceLayerProperties);
@@ -273,10 +279,17 @@ namespace PAL::RenderAPI
         LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkDestroyInstance);
         LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumeratePhysicalDevices);
         LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceProperties);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumerateDeviceExtensionProperties);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceQueueFamilyProperties);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceFeatures);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkCreateDevice);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetDeviceProcAddr);
     }
     
     void VulkanRenderAPI::LoadInstanceExtensions()
     {
+		PlatformLoadInstanceExtensions();
+
         // VK_EXT_debug_utils
         if(IsExtensionEnabled(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
         {
@@ -287,43 +300,44 @@ namespace PAL::RenderAPI
         {
             LOG(Warn) << "Extension: " << VK_EXT_DEBUG_UTILS_EXTENSION_NAME << " not available.";
         }
+
+		if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
+		{
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkDestroySurfaceKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkGetPhysicalDeviceSurfaceFormatsKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkGetPhysicalDeviceSurfacePresentModesKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkGetPhysicalDeviceSurfaceSupportKHR);
+		}
+		else
+		{
+			LOG(Warn) << "Extension: " << VK_KHR_SURFACE_EXTENSION_NAME << " not available.";
+		}
     }
     
-    std::vector<VkExtensionProperties> VulkanRenderAPI::QueryInstanceExtensions() const
+    std::vector<VkExtensionProperties> VulkanRenderAPI::EnumerateInstanceExtensionProperties() const
     {
-        uint32_t extensionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+		uint32_t extensionCount{ 0 };
+		VK_CHECK_RESULT(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr));
         
         std::vector<VkExtensionProperties> extensions(extensionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-        
-        LOG(Information) << extensions.size() << " instance extensions available:";
-        for (const auto& extension : extensions)
-        {
-            LOG(Information) << extension.extensionName;
-        }
+		VK_CHECK_RESULT(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data()));
         
         return extensions;
     }
     
-    std::vector<VkLayerProperties> VulkanRenderAPI::QueryInstanceLayers() const
+    std::vector<VkLayerProperties> VulkanRenderAPI::EnumerateInstanceLayerProperties() const
     {
         uint32_t layerCount;
-        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+		VK_CHECK_RESULT(vkEnumerateInstanceLayerProperties(&layerCount, nullptr));
         
         std::vector<VkLayerProperties> availableLayers(layerCount);
-        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-        
-        LOG(Information) << availableLayers.size() << " instance layers available:";
-        for (const auto& layer : availableLayers)
-        {
-            LOG(Information) << layer.layerName;
-        }
+		VK_CHECK_RESULT(vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()));
         
         return availableLayers;
     }
     
-    std::vector<VkPhysicalDevice> VulkanRenderAPI::QueryPhysicalDevices() const
+    std::vector<VkPhysicalDevice> VulkanRenderAPI::EnumeratePhysicalDevices() const
     {
         uint32_t deviceCount{ 0 };
         VK_CHECK_RESULT(vkEnumeratePhysicalDevices(mInstance, &deviceCount, nullptr));
@@ -333,9 +347,51 @@ namespace PAL::RenderAPI
         
         return physicalDevices;
     }
-    
-    std::shared_ptr<IDevice> VulkanRenderAPI::CreateDevice(DeviceType type)
-    {
-        return nullptr;
-    }
+
+	std::vector<VkExtensionProperties> VulkanRenderAPI::EnumerateDeviceExtensionProperties(const VkPhysicalDevice& device) const
+	{
+		uint32_t propertyCount{ 0 };
+		VK_CHECK_RESULT(vkEnumerateDeviceExtensionProperties(device, nullptr, &propertyCount, nullptr));
+
+		std::vector<VkExtensionProperties> deviceExtensions(propertyCount);
+		VK_CHECK_RESULT(vkEnumerateDeviceExtensionProperties(device, nullptr, &propertyCount, deviceExtensions.data()));
+
+		return deviceExtensions;
+	}
+
+	std::vector<VkSurfaceFormatKHR> VulkanRenderAPI::GetPhysicalDeviceSurfaceFormatsKHR(const VkPhysicalDevice& device, const VkSurfaceKHR& surface) const
+	{
+		uint32_t surfaceFormatCount{ 0 };
+		VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surfaceFormatCount, nullptr));
+
+		std::vector<VkSurfaceFormatKHR> formats(surfaceFormatCount);
+		VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surfaceFormatCount, formats.data()));
+
+		return formats;
+	}
+
+	std::vector<VkPresentModeKHR> VulkanRenderAPI::GetPhysicalDeviceSurfacePresentModesKHR(const VkPhysicalDevice& device, const VkSurfaceKHR& surface) const
+	{
+		uint32_t presentationModesCount{ 0 };
+		VK_CHECK_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentationModesCount, nullptr));
+		
+		std::vector<VkPresentModeKHR> presentModes(presentationModesCount);
+		VK_CHECK_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentationModesCount, presentModes.data()));
+
+		return presentModes;
+	}
+
+	VkBool32 VulkanRenderAPI::GetPhysicalDeviceSurfaceSupportKHR(const VkPhysicalDevice& device, uint32_t queueFamilyIndex, const VkSurfaceKHR& surface) const
+	{
+		VkBool32 supported{ VK_FALSE };
+		VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(device, queueFamilyIndex, surface, &supported));
+		return supported;
+	}
+
+	VkSurfaceCapabilitiesKHR VulkanRenderAPI::GetPhysicalDeviceSurfaceCapabilitiesKHR(const VkPhysicalDevice& device, const VkSurfaceKHR& surface) const
+	{
+		VkSurfaceCapabilitiesKHR caps{ VK_NULL_HANDLE };
+		VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &caps));
+		return caps;
+	}
 }

@@ -8,5 +8,5 @@ set(DOCTEST_NO_INSTALL ON)
 
 set(TARGET_PROJECT_FOLDER "${TARGET_PROJECT_FOLDER}/3rdParty (External)")
 
-#add_subdirectory(doctest)
+add_subdirectory(doctest)
 add_subdirectory(json)

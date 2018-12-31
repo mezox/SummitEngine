@@ -126,7 +126,8 @@ namespace Logging
     {
         using namespace PAL::FileSystem;
         
-        File configFile("/Users/tomaskubovcik/Dev/SummitEngine/logging_config.json");
+        //File configFile("/Users/tomaskubovcik/Dev/SummitEngine/logging_config.json");
+		File configFile("C:/Users/Tomas/Dev/SummitEngine/logging_config.json");
         configFile.Open(EFileAccessMode::Read);
         if(configFile.IsOpened())
         {

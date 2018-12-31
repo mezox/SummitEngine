@@ -3,9 +3,12 @@
 #include "FileSystemBase.h"
 #include "FileTypes.h"
 
+#include <Core/Service.h>
+
 #include <memory>
 #include <string>
 #include <cstdint>
+#include <filesystem>
 
 namespace PAL::FileSystem
 {        
@@ -30,7 +33,7 @@ namespace PAL::FileSystem
          * @param   mode File open mode (read/write/append).
          * @return  File handle of opened file or invalid handle if open failed.
          */
-        virtual FileHandle FileOpen(const std::string& filePath, EFileAccessMode mode) const = 0;
+        virtual FileHandle FileOpen(const std::filesystem::path& filePath, EFileAccessMode mode) const = 0;
         
         /**
          * @brief   Reads data from file.
@@ -72,25 +75,9 @@ namespace PAL::FileSystem
     
     FILESYSTEM_API std::shared_ptr<IFileSystemService> CreateFileSystemService();
     
-    class FILESYSTEM_API FileSystemServiceLocator
+    class FILESYSTEM_API FileSystemServiceLocator : public Core::ServiceLocatorBase<IFileSystemService>
     {
     public:
-        static void Provide(std::shared_ptr<IFileSystemService> service)
-        {
-            mService = std::move(service);
-        }
-        
-        static std::shared_ptr<IFileSystemService> Service()
-        {
-            return mService;
-        }
-        
-        static bool Available()
-        {
-            return mService != nullptr;
-        }
-        
-    private:
-        static std::shared_ptr<IFileSystemService> mService;
+		FileSystemServiceLocator() = default;
     };
 }

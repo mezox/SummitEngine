@@ -5,7 +5,7 @@
 
 namespace Logging
 {
-    class LOGGING_API ConsoleWriter : public WriterBase
+    class ConsoleWriter : public WriterBase
     {
     public:
         ConsoleWriter(std::string format, std::string timeFormat);

@@ -1,20 +1,17 @@
 #include "EngineImpl.h"
 
-#include <nlohmann/json.hpp>
-
 #include <Logging/LoggingService.h>
 #include <Logging/Logger.h>
 
 #include <PAL/FileSystem/FileSystemService.h>
-#include <PAL/RenderAPI/RenderAPIService.h>
+#include <PAL/RenderAPI/VulkanAPI.h>
+#include "VulkanRendererImpl.h"
 
 #ifdef LOG_MODULE_ID
 #undef LOG_MODULE_ID
 #endif
 
 #define LOG_MODULE_ID LOG_MODULE_4BYTE('C','O','R','E')
-
-using json = nlohmann::json;
 
 using namespace Engine;
 using namespace Logging;
@@ -35,24 +32,25 @@ SummitEngine::SummitEngine()
     FileSystemServiceLocator::Service()->Initialize();
     
     LoggingServiceLocator::Provide(CreateLoggingService());
-    RenderAPIServiceLocator::Provide(CreateRenderAPI(RenderBackend::Vulkan));
+    VulkanAPIServiceLocator::Provide(CreateVulkanRenderAPI());
+
+	Renderer::RendererServiceLocator::Provide(Renderer::CreateRenderer());
 }
 
 void SummitEngine::Initialize()
-{
-    mWindow = std::make_unique<App::Window>("SummitEngine", 1280, 720);
-    
+{    
     //LOG_INFORMATION("Created default window")
     
-    //mSecondWindow = std::make_unique<App::Window>("Second", 640, 320);
-    
     FileSystemServiceLocator::Service()->Initialize();
-    
     LoggingServiceLocator::Service()->Initialize();
     
-    RenderAPIServiceLocator::Service()->Initialize();
-    
-    RenderAPIServiceLocator::Service()->CreateDevice(DeviceType::Integrated);
+    //RenderAPIServiceLocator::Service()->Initialize();
+	VulkanAPIServiceLocator::Service()->Initialize();
+
+	Renderer::RendererServiceLocator::Service()->Initialize();
+
+	mWindow = std::make_unique<App::Window>("SummitEngine", 1280, 720);
+	mSecondWindow = std::make_unique<App::Window>("Second", 640, 320);
     
     LOG(Information) << "Alleluja";
 }
@@ -63,6 +61,11 @@ void SummitEngine::StartFrame()
 
 void SummitEngine::Update()
 {
+	if(mWindow)
+		mWindow->Update();
+
+	if(mSecondWindow)
+		mSecondWindow->Update();
 }
 
 void SummitEngine::EndFrame()

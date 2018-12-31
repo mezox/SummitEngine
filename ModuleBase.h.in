@@ -1,0 +1,19 @@
+#pragma once
+
+#ifndef @MODULE_NAME@_API
+#	ifdef _NOEXPORT
+#		define @MODULE_NAME@_API
+#	elif _@MODULE_NAME@_EXPORT
+#		ifdef _WIN32
+#			define @MODULE_NAME@_API __declspec(dllexport)
+#		else
+#			define @MODULE_NAME@_API __attribute__((__visibility__("default")))
+#		endif
+#	else
+#		ifdef _WIN32
+#			define @MODULE_NAME@_API __declspec(dllimport)
+#		else
+#			define @MODULE_NAME@_API __attribute__((__visibility__("default")))
+#		endif
+#	endif
+#endif

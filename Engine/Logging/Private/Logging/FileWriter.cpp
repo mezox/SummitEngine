@@ -24,7 +24,7 @@ namespace Logging
         
         const auto formattedMsg = FormatMessage(msg, channel, severity, component);
         
-        if (mLogFile->Write((void*)formattedMsg.c_str(), formattedMsg.size()))
+        if (mLogFile->Write((void*)formattedMsg.c_str(), static_cast<uint32_t>(formattedMsg.size())))
         {
             if (++mFlushTriggerLines > 1)
             {

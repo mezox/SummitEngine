@@ -29,3 +29,15 @@ if(!(fun = (PFN_##fun)vkGetInstanceProcAddr(instance, #fun ))) \
     fun = nullptr; \
     throw no_instance_func_ext(#fun); \
 }
+
+#define LOAD_VK_DEVICE_LEVEL_FUNCTION(device, loadFunc, fun)										\
+if(!(fun = (PFN_##fun)loadFunc( device, #fun )))								\
+{																						\
+	fun = nullptr;																		\
+}
+
+#define LOAD_VK_DEVICE_LEVEL_FUNCTION_EXT(device, loadFunc, fun)										\
+if(!(fun = (PFN_##fun)loadFunc( device, #fun )))								\
+{																						\
+	fun = nullptr;																		\
+}

@@ -11,15 +11,29 @@ include_directories(
 	"Private"
 )
 
+set(EXTERNAL_DEPENDENCIES
+	FileSystem
+	Logging
+#	RenderAPI
+)
+
+set(DEPENDENCIES
+	FileSystem
+	Logging
+	RenderAPI
+)
+
 # platform agnostic source files
 set(PRIVATE_SOURCES
 	Private/EngineImpl.h
 	Private/EngineImpl.cpp
 	Private/Window.h
+	Private/Renderer.h
+	Private/VulkanRendererImpl.h
+	Private/VulkanRendererImpl.cpp
 )
 
 set(PUBLIC_SOURCES
-	Public/Engine/EngineBase.h
 	Public/Engine/Engine.h
 )
 
@@ -42,19 +56,18 @@ if (PLATFORM_APPLE_MACOS)
 
 	set_objective_c_compilation(${OBJECTIVE_C_SOURCES})
 
-    set(PLATFORM_INTERFACES
+    list(APPEND DEPENDENCIES
+    	"-framework AppKit"
     )
+elseif(PLATFORM_WINDOWS)
+	list(APPEND PRIVATE_SOURCES
+		Private/Windows/Window.cpp
+	)
 endif()
 
-set(DEPENDENCIES
-	nlohmann_json
-
-	FileSystem
-	Logging
-	RenderAPI
-)
+configure_platform_file(${PROJECT_NAME} Public/Engine "${PUBLIC_SOURCES}")
 
 
 add_library(${PROJECT_NAME} ${PUBLIC_SOURCES} ${PRIVATE_SOURCES})
-target_link_libraries(${PROJECT_NAME} "-framework AppKit" ${DEPENDENCIES})
+target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} ${EXTERNAL_DEPENDENCIES})
 target_include_directories(${PROJECT_NAME} INTERFACE "Public")
