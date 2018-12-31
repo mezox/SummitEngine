@@ -7,7 +7,6 @@
 #include <memory>
 #include <cstdint>
 #include <vector>
-#include <filesystem>
 
 namespace PAL::FileSystem
 {
@@ -15,7 +14,7 @@ namespace PAL::FileSystem
     {
     public:
         File() = default;
-        explicit File(const std::filesystem::path& path);
+        explicit File(const std::string& path);
         virtual ~File();
         
         void Open(EFileAccessMode mode);
@@ -28,7 +27,7 @@ namespace PAL::FileSystem
         
     private:
         FileHandle mHandle{ nullptr };
-		std::filesystem::path mPath;
+		std::string mPath;
         std::unique_ptr<std::vector<uint8_t>> mBuffer;
     };
 }

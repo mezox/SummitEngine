@@ -29,30 +29,19 @@ SummitEngine::SummitEngine()
 {
     // Initialize platform abstraction layers
     FileSystemServiceLocator::Provide(CreateFileSystemService());
-    FileSystemServiceLocator::Service()->Initialize();
-    
+    FileSystemServiceLocator::Service().Initialize();
     LoggingServiceLocator::Provide(CreateLoggingService());
     VulkanAPIServiceLocator::Provide(CreateVulkanRenderAPI());
-
 	Renderer::RendererServiceLocator::Provide(Renderer::CreateRenderer());
 }
 
 void SummitEngine::Initialize()
-{    
-    //LOG_INFORMATION("Created default window")
-    
-    FileSystemServiceLocator::Service()->Initialize();
-    LoggingServiceLocator::Service()->Initialize();
-    
-    //RenderAPIServiceLocator::Service()->Initialize();
-	VulkanAPIServiceLocator::Service()->Initialize();
-
-	Renderer::RendererServiceLocator::Service()->Initialize();
+{        
+    LoggingServiceLocator::Service().Initialize();
+    VulkanAPIServiceLocator::Service().Initialize();
+	Renderer::RendererServiceLocator::Service().Initialize();
 
 	mWindow = std::make_unique<App::Window>("SummitEngine", 1280, 720);
-	mSecondWindow = std::make_unique<App::Window>("Second", 640, 320);
-    
-    LOG(Information) << "Alleluja";
 }
 
 void SummitEngine::StartFrame()

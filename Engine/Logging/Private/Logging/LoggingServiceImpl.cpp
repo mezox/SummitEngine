@@ -99,17 +99,16 @@ namespace Logging
                     }
                 }
                 
-                Logging::LoggingServiceLocator::Service()->AddLogger(std::move(logger));
+                Logging::LoggingServiceLocator::Service().AddLogger(std::move(logger));
             }
         }
     }
-    
-    
-    std::shared_ptr<ILoggingService> LoggingServiceLocator::mService = nullptr;
 
-    std::shared_ptr<ILoggingService> CreateLoggingService()
+    std::unique_ptr<ILoggingService> LoggingServiceLocator::mService = nullptr;
+
+    std::unique_ptr<ILoggingService> CreateLoggingService()
     {
-        return std::make_shared<LoggingServiceImpl>();
+        return std::make_unique<LoggingServiceImpl>();
     }
 
     LoggingServiceImpl::LoggingServiceImpl()
@@ -126,8 +125,11 @@ namespace Logging
     {
         using namespace PAL::FileSystem;
         
-        //File configFile("/Users/tomaskubovcik/Dev/SummitEngine/logging_config.json");
+#ifndef _WIN32
+        File configFile("/Users/tomaskubovcik/Dev/SummitEngine/logging_config.json");
+#else
 		File configFile("C:/Users/Tomas/Dev/SummitEngine/logging_config.json");
+#endif
         configFile.Open(EFileAccessMode::Read);
         if(configFile.IsOpened())
         {

@@ -35,9 +35,11 @@ set(PUBLIC_SOURCES
 set(DEPENDENCIES
     # External
     nlohmann_json
+    Vulkan::Vulkan
 
     # Internal
     FileSystem
+    Logging
 )
 
 # platform dependant settings
@@ -45,12 +47,14 @@ if (PLATFORM_APPLE_MACOS)
 	add_definitions("-DVK_USE_PLATFORM_MACOS_MVK")
 
 	set(OBJECTIVE_C_SOURCES
-		Private/Metal/MetalAPIImpl.h
-		Private/Metal/MetalAPIImpl.cpp
+		#Private/Metal/MetalAPIImpl.h
+		#Private/Metal/MetalAPIImpl.cpp
 	)
 
 	list(APPEND PRIVATE_SOURCES
 		${OBJECTIVE_C_SOURCES}
+		Private/Vulkan/VulkanImplMacOS.h
+		Private/Vulkan/VulkanImplMacOS.cpp
 	)
 
 	set_objective_c_compilation(${OBJECTIVE_C_SOURCES})
@@ -62,8 +66,8 @@ elseif (PLATFORM_APPLE_IOS)
 	add_definitions("-DVK_USE_PLATFORM_IOS_MVK")
 
 	set(OBJECTIVE_C_SOURCES
-		Private/Metal/MetalAPIImpl.h
-		Private/Metal/MetalAPIImpl.cpp
+		#Private/Metal/MetalAPIImpl.h
+		#Private/Metal/MetalAPIImpl.cpp
 	)
 
 	list(APPEND PRIVATE_SOURCES
@@ -87,5 +91,5 @@ endif()
 configure_platform_file(${PROJECT_NAME} Public/PAL/RenderAPI "${PUBLIC_SOURCES}")
 
 add_library(${PROJECT_NAME} ${PUBLIC_SOURCES} ${PRIVATE_SOURCES})
-target_link_libraries(${PROJECT_NAME} Core Logging Vulkan::Vulkan ${DEPENDENCIES})
+target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
 target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Public/ ${PLATFORM_INTERFACES})

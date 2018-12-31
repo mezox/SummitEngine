@@ -2,32 +2,48 @@
 
 #include <memory>
 #include <utility>
+#include <exception>
 
 namespace Core
 {
-	template<typename T>
+    struct service_locator_exception : public std::runtime_error { using std::runtime_error::runtime_error; };
+    
+	template<class T>
 	class ServiceLocatorBase
 	{
 	public:
-	    static void Provide(std::shared_ptr<T> service)
+	    static void Provide(std::unique_ptr<T> service)
 	    {
-	        mService = std::move(service);
+	        service = std::move(service);
 	    }
 	    
-	    static std::shared_ptr<T> Service()
+	    static T& Service()
 	    {
-	        return mService;
+            if(!mService)
+            {
+                throw service_locator_exception("Service is uninitialized!");
+            }
+            
+	        return *mService;
 	    }
 	    
 	    static bool Available()
 	    {
-	        return mService != nullptr;
+            return mService != nullptr;
 	    }
 	    
-	private:
-	    static std::shared_ptr<T> mService;
+	protected:
+        /* Use Singleton initialization to instead of static member
+         * to prevent undefined behaviour caused by templatization of the class */
+//        static std::unique_ptr<T>& Storage()
+//        {
+//            static std::unique_ptr<T> service;
+//            return service;
+//        }
+        
+        static std::unique_ptr<T> mService;
 	};
-
-	template<typename T>
-	std::shared_ptr<T> ServiceLocatorBase<T>::mService = nullptr;
+    
+    template<typename T>
+    std::unique_ptr<T> Core::ServiceLocatorBase<T>::mService = nullptr;
 }

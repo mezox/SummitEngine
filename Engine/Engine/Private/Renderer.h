@@ -44,12 +44,33 @@ namespace Renderer
 
 	private:
 	};
-
-	class RendererServiceLocator : public Core::ServiceLocatorBase<IRenderer>
-	{
-	public:
-		RendererServiceLocator() = default;
-	};
 	
-	std::shared_ptr<IRenderer> CreateRenderer();
+	std::unique_ptr<IRenderer> CreateRenderer();
+    
+    class RendererServiceLocator
+    {
+    public:
+        static void Provide(std::unique_ptr<IRenderer> service)
+        {
+            mService = std::move(service);
+        }
+        
+        static IRenderer& Service()
+        {
+            if(!mService)
+            {
+                throw std::runtime_error("FileSystem service unitialized");
+            }
+            
+            return *mService;
+        }
+        
+        static bool Available()
+        {
+            return mService != nullptr;
+        }
+        
+    private:
+        static std::unique_ptr<IRenderer> mService;
+    };
 }

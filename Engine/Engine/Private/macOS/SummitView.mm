@@ -1,4 +1,5 @@
 #import "SummitView.h"
+#import <QuartzCore/CAMetalLayer.h>
 
 #include <Logging/LoggingService.h>
 
@@ -99,5 +100,18 @@
 
 - (void)keyDown:(NSEvent *)event
 {
+}
+
+/** Returns a Metal-compatible layer. */
++ (Class)layerClass {
+    return [CAMetalLayer class];
+}
+
+/** If the wantsLayer property is set to YES, this method will be invoked to return a layer instance. */
+- (CALayer*)makeBackingLayer {
+    CALayer* layer = [self.class.layerClass layer];
+    CGSize viewScale = [self convertSizeToBacking:CGSizeMake(1.0, 1.0)];
+    layer.contentsScale = MIN(viewScale.width, viewScale.height);
+    return layer;
 }
 @end

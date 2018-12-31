@@ -133,6 +133,8 @@ namespace PAL::RenderAPI
         return "Unknow error";
     }
     
+    std::unique_ptr<VulkanRenderAPI> VulkanAPIServiceLocator::mService = nullptr;
+    
     VulkanRenderAPI::~VulkanRenderAPI()
     {
 		DeInitialize();
@@ -153,8 +155,12 @@ namespace PAL::RenderAPI
         mAvailableInstanceExtensions = EnumerateInstanceExtensionProperties();
         mAvailableInstanceLayers = EnumerateInstanceLayerProperties();
         
-        //File configFile("/Users/tomaskubovcik/Dev/SummitEngine/vk_config.json");
+#ifndef _WIN32
+        File configFile("/Users/tomaskubovcik/Dev/SummitEngine/vk_config.json");
+#else
 		File configFile("C:/Users/Tomas/Dev/SummitEngine/vk_config.json");
+#endif
+        
         configFile.Open(EFileAccessMode::Read);
         if(configFile.IsOpened())
         {
@@ -207,15 +213,18 @@ namespace PAL::RenderAPI
     
     void VulkanRenderAPI::DeInitialize()
     {
-        mAvailableInstanceExtensions.clear();
-        mAvailableInstanceLayers.clear();
-        mEnabledInstanceExtensions.clear();
-        mEnabledInstanceValidationLayers.clear();
-        
-        vkDestroyInstance(mInstance, nullptr);
-		PlatformDeinitialize();
+        if(mIsInitialized)
+        {
+            mAvailableInstanceExtensions.clear();
+            mAvailableInstanceLayers.clear();
+            mEnabledInstanceExtensions.clear();
+            mEnabledInstanceValidationLayers.clear();
+            
+            vkDestroyInstance(mInstance, nullptr);
+            PlatformDeinitialize();
 
-		mIsInitialized = false;
+            mIsInitialized = false;
+        }
     }
 
     bool VulkanRenderAPI::IsExtensionEnabled(const char* extensionName) const

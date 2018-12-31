@@ -26,7 +26,7 @@ namespace PAL::RenderAPI
 
     public:
         VulkanRenderAPI();
-        ~VulkanRenderAPI();
+        virtual ~VulkanRenderAPI();
         
         void Initialize();
         void DeInitialize();
@@ -113,11 +113,32 @@ namespace PAL::RenderAPI
 		PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR{ nullptr };
     };
 
-	class RENDERAPI_API VulkanAPIServiceLocator : public Core::ServiceLocatorBase<VulkanRenderAPI>
-	{
-	public:
-		VulkanAPIServiceLocator() = default;
-	};
+    class RENDERAPI_API VulkanAPIServiceLocator
+    {
+    public:
+        static void Provide(std::unique_ptr<VulkanRenderAPI> service)
+        {
+            mService = std::move(service);
+        }
+        
+        static VulkanRenderAPI& Service()
+        {
+            if(!mService)
+            {
+                throw std::runtime_error("VulkanAPI service unitialized");
+            }
+            
+            return *mService;
+        }
+        
+        static bool Available()
+        {
+            return mService != nullptr;
+        }
+        
+    private:
+        static std::unique_ptr<VulkanRenderAPI> mService;
+    };
 
-	RENDERAPI_API std::shared_ptr<VulkanRenderAPI> CreateVulkanRenderAPI();
+	RENDERAPI_API std::unique_ptr<VulkanRenderAPI> CreateVulkanRenderAPI();
 }

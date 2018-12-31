@@ -12,8 +12,11 @@
 
 using namespace PAL::FileSystem;
 
-std::shared_ptr<IFileSystemService> FileSystemServiceLocator::mService = nullptr;
-
+namespace PAL::FileSystem
+{
+    std::unique_ptr<IFileSystemService> FileSystemServiceLocator::mService = nullptr;
+}
+    
 class FileSystemServiceImpl::FileSystemNative
 {
 public:
@@ -172,7 +175,7 @@ void FileSystemServiceImpl::DeInitialize()
 
 //    };
 
-std::shared_ptr<IFileSystemService> PAL::FileSystem::CreateFileSystemService()
+std::unique_ptr<IFileSystemService> PAL::FileSystem::CreateFileSystemService()
 {
-    return std::make_shared<FileSystemServiceImpl>();
+    return std::make_unique<FileSystemServiceImpl>();
 }

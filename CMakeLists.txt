@@ -86,7 +86,7 @@ if(PLATFORM_APPLE_MACOS)
 	set(BUILD_SHARED_LIBS ON)
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fobjc-abi-version=2 -fobjc-arc")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -stdlib=libc++ -fobjc-abi-version=2 -fobjc-arc")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17 -stdlib=libc++ -fobjc-abi-version=2 -fobjc-arc")
 
     if (${BUILD_SHARED_LIBS})
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")

@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 #include <cstdint>
-#include <filesystem>
 
 namespace PAL::FileSystem
 {        
@@ -33,7 +32,7 @@ namespace PAL::FileSystem
          * @param   mode File open mode (read/write/append).
          * @return  File handle of opened file or invalid handle if open failed.
          */
-        virtual FileHandle FileOpen(const std::filesystem::path& filePath, EFileAccessMode mode) const = 0;
+        virtual FileHandle FileOpen(const std::string& filePath, EFileAccessMode mode) const = 0;
         
         /**
          * @brief   Reads data from file.
@@ -73,11 +72,32 @@ namespace PAL::FileSystem
         virtual void FileFlush(FileHandle handle) const = 0;
     };
     
-    FILESYSTEM_API std::shared_ptr<IFileSystemService> CreateFileSystemService();
+    FILESYSTEM_API std::unique_ptr<IFileSystemService> CreateFileSystemService();
     
-    class FILESYSTEM_API FileSystemServiceLocator : public Core::ServiceLocatorBase<IFileSystemService>
+    class FILESYSTEM_API FileSystemServiceLocator
     {
     public:
-		FileSystemServiceLocator() = default;
+        static void Provide(std::unique_ptr<IFileSystemService> service)
+        {
+            mService = std::move(service);
+        }
+
+        static IFileSystemService& Service()
+        {
+            if(!mService)
+            {
+                throw std::runtime_error("FileSystem service unitialized");
+            }
+            
+            return *mService;
+        }
+
+        static bool Available()
+        {
+            return mService != nullptr;
+        }
+
+    private:
+        static std::unique_ptr<IFileSystemService> mService;
     };
 }

@@ -8,9 +8,9 @@ using namespace Renderer;
 
 namespace Renderer
 {
-	std::shared_ptr<IRenderer> CreateRenderer()
+	std::unique_ptr<IRenderer> CreateRenderer()
 	{
-		return std::make_shared<VulkanRenderer>();
+		return std::make_unique<VulkanRenderer>();
 	}
 
 	class VulkanWindowSurface : public RendererResource
@@ -22,7 +22,7 @@ namespace Renderer
 
 		~VulkanWindowSurface()
 		{
-			PAL::RenderAPI::VulkanAPIServiceLocator::Service()->DestroySurface(mSurface);
+			PAL::RenderAPI::VulkanAPIServiceLocator::Service().DestroySurface(mSurface);
 		}
 
 		const VkSurfaceKHR& GetVulkanSurface() const { return mSurface; }
@@ -30,11 +30,13 @@ namespace Renderer
 	private:
 		VkSurfaceKHR mSurface;
 	};
+    
+    std::unique_ptr<IRenderer> RendererServiceLocator::mService = nullptr;
 }
 
 void VulkanRenderer::Initialize()
 {
-	const auto& vulkanAPI = *PAL::RenderAPI::VulkanAPIServiceLocator::Service();
+	const auto& vulkanAPI = PAL::RenderAPI::VulkanAPIServiceLocator::Service();
 
 	const auto instanceExt = vulkanAPI.EnumerateInstanceExtensionProperties();
 
@@ -70,7 +72,7 @@ void Renderer::VulkanRenderer::Deinitialize()
 
 std::shared_ptr<IDevice> VulkanRenderer::CreateDevice(DeviceType type)
 {
-	const auto& vulkanAPI = *PAL::RenderAPI::VulkanAPIServiceLocator::Service();
+	const auto& vulkanAPI = PAL::RenderAPI::VulkanAPIServiceLocator::Service();
 
 	const auto physicalDevices = vulkanAPI.EnumeratePhysicalDevices();
 	const auto& physicalDevice = physicalDevices.front();
@@ -112,7 +114,7 @@ std::shared_ptr<IDevice> VulkanRenderer::CreateDevice(DeviceType type)
 
 void VulkanRenderer::CreateWindowSurface(std::unique_ptr<RendererResource>& surface, void * nativeHandle) const
 {
-	const auto& vulkanAPI = *PAL::RenderAPI::VulkanAPIServiceLocator::Service();
+	const auto& vulkanAPI = PAL::RenderAPI::VulkanAPIServiceLocator::Service();
 	const auto vulkanSurface = vulkanAPI.CreateWindowSurface(nativeHandle);
 	surface = std::make_unique<VulkanWindowSurface>(vulkanSurface);
 }

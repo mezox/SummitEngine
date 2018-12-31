@@ -3,7 +3,7 @@
 
 using namespace PAL::FileSystem;
 
-File::File(const std::filesystem::path& path)
+File::File(const std::string& path)
 : mPath(path)
 {
     
@@ -19,7 +19,7 @@ void File::Open(EFileAccessMode mode)
     if(!FileSystemServiceLocator::Available())
         return;
     
-    mHandle = FileSystemServiceLocator::Service()->FileOpen(mPath, mode);
+    mHandle = FileSystemServiceLocator::Service().FileOpen(mPath, mode);
     if(!mHandle)
     {
         throw FileException();
@@ -42,7 +42,7 @@ void File::Close()
     
     if (mHandle)
     {
-        FileSystemServiceLocator::Service()->FileClose(mHandle);
+        FileSystemServiceLocator::Service().FileClose(mHandle);
         mHandle = nullptr;
     }
 }
@@ -60,14 +60,14 @@ const std::vector<uint8_t>& File::Read()
     if(!IsOpened())
         Open(EFileAccessMode::Read);
     
-    const uint32_t fileSize = FileSystemServiceLocator::Service()->FileGetSize(mHandle);
+    const uint32_t fileSize = FileSystemServiceLocator::Service().FileGetSize(mHandle);
     
     std::vector<uint8_t> data;
     data.resize(fileSize);
     
     mBuffer = std::make_unique<std::vector<uint8_t>>(data);
     
-    const uint32_t bytesRead = FileSystemServiceLocator::Service()->FileRead(mHandle, mBuffer->data(), fileSize);
+    const uint32_t bytesRead = FileSystemServiceLocator::Service().FileRead(mHandle, mBuffer->data(), fileSize);
     if(fileSize != bytesRead)
     {
         mBuffer.release();
@@ -85,7 +85,7 @@ uint32_t File::Write(void* data, uint32_t bytesToWrite) const
     if(!FileSystemServiceLocator::Available())
         return 0;
     
-    return FileSystemServiceLocator::Service()->FileWrite(mHandle, data, bytesToWrite);
+    return FileSystemServiceLocator::Service().FileWrite(mHandle, data, bytesToWrite);
 }
 
 void File::Flush() const
@@ -93,5 +93,5 @@ void File::Flush() const
     if(!FileSystemServiceLocator::Available())
         return;
     
-    FileSystemServiceLocator::Service()->FileFlush(mHandle);
+    FileSystemServiceLocator::Service().FileFlush(mHandle);
 }

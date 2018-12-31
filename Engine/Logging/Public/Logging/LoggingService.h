@@ -1,11 +1,12 @@
 #pragma once
 
+#include <Core/Service.h>
 #include "LoggingBase.h"
 #include "Logger.h"
 
 #define LOG_MSG_MODULE(id, severity) \
-    if(Logging::LoggingServiceLocator::Service()->GetLogger(LOGGER_ID)) \
-        Logging::Composer(*Logging::LoggingServiceLocator::Service()->GetLogger(LOGGER_ID), 0, id, severity)
+    if(Logging::LoggingServiceLocator::Service().GetLogger(LOGGER_ID)) \
+        Logging::Composer(*Logging::LoggingServiceLocator::Service().GetLogger(LOGGER_ID), 0, id, severity)
 
 #define LOG(severity) LOG_MSG_MODULE(LOG_MODULE_ID, Logging::Severity::Information)
 
@@ -65,37 +66,32 @@ namespace Logging
 		virtual void RemoveLogger(const std::string& name) = 0;
 	};
 
-    LOGGING_API std::shared_ptr<ILoggingService> CreateLoggingService();
+    LOGGING_API std::unique_ptr<ILoggingService> CreateLoggingService();
 
-	class LOGGING_API LoggingServiceLocator
-	{
-	public:
-        /**
-         * @brief   Initializes service locator with service.
-         * @param   service Logging service
-         */
-		static void Provide(std::shared_ptr<ILoggingService> service)
-		{
-			mService = std::move(service);
-		}
+    class LOGGING_API LoggingServiceLocator
+    {
+    public:
+        static void Provide(std::unique_ptr<ILoggingService> service)
+        {
+            mService = std::move(service);
+        }
 
-        /**
-         * @brief   Returns logging service if active, nullptr otherwise.
-         */
-		static std::shared_ptr<ILoggingService> Service()
-		{
-			return mService;
-		}
+        static ILoggingService& Service()
+        {
+            if(!mService)
+            {
+                throw std::runtime_error("Logging Service unitialized!");
+            }
 
-        /**
-         * @brief   Queries availability of logging service.
-         */
-		static bool Available()
-		{
-			return !mService;
-		}
+            return *mService;
+        }
 
-	private:
-		static std::shared_ptr<ILoggingService> mService;
-	};
+        static bool Available()
+        {
+            return mService != nullptr;
+        }
+
+    private:
+        static std::unique_ptr<ILoggingService> mService;
+    };
 }

@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "Renderer.h"
 
 #import <Cocoa/Cocoa.h>
 #import "SummitWindow.h"
@@ -20,7 +21,7 @@ namespace App
             windowDelegate = [[SummitWindowDelegate alloc] init];
             mainView = [[NSView alloc] init];
             
-            view = [[SummitRenderView alloc] initWithBounds:NSMakeRect(0, 0, 640, 720)];
+            view = [[SummitRenderView alloc] initWithBounds:NSMakeRect(0, 0, width, height)];
             view.wantsLayer = YES;
             view.layer.backgroundColor = NSColor.blueColor.CGColor;
             
@@ -30,12 +31,12 @@ namespace App
             [window setDelegate:windowDelegate];
             [window center];
             
-            view2 = [[SummitRenderView alloc] initWithBounds:NSMakeRect(640, 0, 640, 720)];
-            view2.wantsLayer = YES;
-            view2.layer.backgroundColor = NSColor.orangeColor.CGColor;
-            //[view2 becomeFirstResponder];
+//            view2 = [[SummitRenderView alloc] initWithBounds:NSMakeRect(640, 0, 640, 720)];
+//            view2.wantsLayer = YES;
+//            view2.layer.backgroundColor = NSColor.orangeColor.CGColor;
+//            //[view2 becomeFirstResponder];
             [mainView addSubview:view];
-            [mainView addSubview:view2];
+            //[mainView addSubview:view2];
             
             [window setAcceptsMouseMovedEvents: YES];
             
@@ -47,12 +48,12 @@ namespace App
             
         }
         
-    private:
+    public:
         id window = nil;
         id windowDelegate = nil;
         NSView* mainView = nil;
         SummitRenderView* view = nil;
-        SummitRenderView* view2 = nil;
+        //SummitRenderView* view2 = nil;
     };
     
     Window::Window(const std::string& title, const uint16_t width, const uint16_t height)
@@ -60,6 +61,11 @@ namespace App
         , mWidth(width)
         , mHeight(height)
         , mNativeWindow(new App::Window::NativeWindow(title, width, height))
+    {
+        Renderer::RendererServiceLocator::Service().CreateWindowSurface(mSurface, (void*)CFBridgingRetain(mNativeWindow->view));
+    }
+    
+    void Window::Update()
     {
         
     }

@@ -34,12 +34,11 @@
     // Insert code here to initialize your application
     
     Engine::EngineServiceLocator::Provide(Engine::CreateEngineService());
-    
-    auto appLogger = std::make_unique<Logging::Logger>(LOGGER_ID);
-    Logging::LoggingServiceLocator::Service()->AddLogger(std::move(appLogger));
-    //LOG_INFORMATION << "SummitApp did finish launching!";
-    
     Engine::EngineServiceLocator::Service()->Initialize();
+    
+    //auto appLogger = std::make_unique<Logging::Logger>(LOGGER_ID);
+    //Logging::LoggingServiceLocator::Service().AddLogger(std::move(appLogger));
+    //LOG_INFORMATION << "SummitApp did finish launching!";
 }
 
 

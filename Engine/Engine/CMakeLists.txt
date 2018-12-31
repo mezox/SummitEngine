@@ -58,6 +58,7 @@ if (PLATFORM_APPLE_MACOS)
 
     list(APPEND DEPENDENCIES
     	"-framework AppKit"
+        "-framework QuartzCore"
     )
 elseif(PLATFORM_WINDOWS)
 	list(APPEND PRIVATE_SOURCES
