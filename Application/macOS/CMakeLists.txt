@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17 -stdlib=libc++")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(APPLICATION_HEADERS
-   ${CMAKE_CURRENT_SOURCE_DIR}/include//AppDelegate.h
+   ${CMAKE_CURRENT_SOURCE_DIR}/include/AppDelegate.h
 )
 
 set(APPLICATION_SRCS
@@ -15,6 +15,8 @@ set(APPLICATION_SRCS
 )
 
 set(APPLICATION_RESOURCES
+	${CMAKE_CURRENT_SOURCE_DIR}/../../logging_config.json
+	${CMAKE_CURRENT_SOURCE_DIR}/../../vk_config.json
 )
 
 add_executable(Application MACOSX_BUNDLE

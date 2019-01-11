@@ -7,13 +7,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(APPLICATION_HEADERS
    ${CMAKE_CURRENT_SOURCE_DIR}/include/AppDelegate.h
-   ${CMAKE_CURRENT_SOURCE_DIR}/include/ViewController.h
 )
 
 set(APPLICATION_SRCS
    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.mm
    ${CMAKE_CURRENT_SOURCE_DIR}/src/AppDelegate.mm
-   ${CMAKE_CURRENT_SOURCE_DIR}/src/ViewController.mm
 )
 
 set(APPLICATION_RESOURCES

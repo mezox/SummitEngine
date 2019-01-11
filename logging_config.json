@@ -12,7 +12,7 @@
 		    "message_format": "%DTI [%MID:%SEV] \"%MNM\" %MSG",
 		    "time_format": "%d-%m-%Y %H:%M:%S",
 		    "channel": 0,
-		    "file": "/Users/tomaskubovcik/Dev/SummitEngine/log.txt"
+		    "file": "log.txt"
 		}
 	]
 }
