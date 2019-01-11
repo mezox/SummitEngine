@@ -7,6 +7,9 @@ if (${BUILD_SHARED_LIBS})
 endif()
 
 set(VULKAN_SDK "/Users/tomaskubovcik/Dev/sdks/vulkansdk/macOS")
+#set(Vulkan_LIBRARY ${VULKAN_SDK}/lib)
+#set(Vulkan_INCLUDE_DIR ${VULKAN_SDK}/include)
+
 find_package(vulkan REQUIRED)
 
 include_directories(
@@ -65,20 +68,12 @@ if (PLATFORM_APPLE_MACOS)
 elseif (PLATFORM_APPLE_IOS)
 	add_definitions("-DVK_USE_PLATFORM_IOS_MVK")
 
-	set(OBJECTIVE_C_SOURCES
-		#Private/Metal/MetalAPIImpl.h
-		#Private/Metal/MetalAPIImpl.cpp
-	)
-
 	list(APPEND PRIVATE_SOURCES
 		${OBJECTIVE_C_SOURCES}
+		Private/Vulkan/VulkanImplIOS.h
+		Private/Vulkan/VulkanImplIOS.cpp
 	)
 
-	set_objective_c_compilation(${OBJECTIVE_C_SOURCES})
-
-	list(APPEND DEPENDENCIES
-		"-framework Metal"
-	)
 elseif(PLATFORM_WINDOWS)
 	add_definitions("-DVK_USE_PLATFORM_WIN32_KHR")
 

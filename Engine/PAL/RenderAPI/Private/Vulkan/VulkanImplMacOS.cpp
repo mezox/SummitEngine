@@ -11,6 +11,7 @@ using namespace PAL::RenderAPI;
 void VulkanImplMacOS::PlatformInitialize()
 {
     mVulkanLibrary = dlopen("libvulkan.dylib", RTLD_NOW | RTLD_LOCAL);
+    //mVulkanLibrary = dlopen("libMoltenVK.dylib", RTLD_NOW | RTLD_LOCAL);
     if (!mVulkanLibrary)
     {
         throw vk_error("Could not load Vulkan library!");
