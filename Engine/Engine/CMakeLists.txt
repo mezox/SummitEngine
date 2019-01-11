@@ -21,6 +21,8 @@ set(DEPENDENCIES
 	FileSystem
 	Logging
 	RenderAPI
+    Event
+    Timer
 )
 
 # platform agnostic source files
@@ -28,6 +30,7 @@ set(PRIVATE_SOURCES
 	Private/EngineImpl.h
 	Private/EngineImpl.cpp
 	Private/Window.h
+	Private/WindowEvent.h
 	Private/Renderer.h
 	Private/VulkanRendererImpl.h
 	Private/VulkanRendererImpl.cpp
@@ -58,6 +61,25 @@ if (PLATFORM_APPLE_MACOS)
 
     list(APPEND DEPENDENCIES
     	"-framework AppKit"
+        "-framework QuartzCore"
+    )
+elseif(PLATFORM_APPLE_IOS)
+	set(OBJECTIVE_C_SOURCES
+		Private/iOS/ViewController.h
+		Private/iOS/ViewController.mm
+		Private/iOS/SummitView.h
+		Private/iOS/SummitView.mm
+		Private/iOS/Window.mm
+	)
+
+	list(APPEND PRIVATE_SOURCES
+		${OBJECTIVE_C_SOURCES}
+	)
+
+	set_objective_c_compilation(${OBJECTIVE_C_SOURCES})
+
+    list(APPEND DEPENDENCIES
+    	"-framework UIKit"
         "-framework QuartzCore"
     )
 elseif(PLATFORM_WINDOWS)
