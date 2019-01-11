@@ -3,6 +3,8 @@
 #include <string>
 #include <cstdint>
 
+#include <Event/Event.h>
+
 namespace Renderer
 {
 	class IRenderer;

@@ -82,8 +82,6 @@
 {
     CGPoint point = [event locationInWindow];
     CGRect rect = [self bounds];
-    
-    NSLog(@"mouseMoved: %f %f", point.x - rect.origin.x, point.y);
 }
 
 - (void)rightMouseDown:(NSEvent *)event
