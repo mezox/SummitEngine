@@ -289,6 +289,7 @@ namespace PAL::RenderAPI
         LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumeratePhysicalDevices);
         LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceProperties);
 		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumerateDeviceExtensionProperties);
+        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumerateDeviceLayerProperties);
 		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceQueueFamilyProperties);
 		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceFeatures);
 		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkCreateDevice);
@@ -367,6 +368,17 @@ namespace PAL::RenderAPI
 
 		return deviceExtensions;
 	}
+    
+    std::vector<VkLayerProperties> VulkanRenderAPI::EnumerateDeviceLayerProperties(const VkPhysicalDevice& device) const
+    {
+        uint32_t layerCount{ 0 };
+        VK_CHECK_RESULT(vkEnumerateDeviceLayerProperties(device, &layerCount, nullptr));
+        
+        std::vector<VkLayerProperties> deviceLayers(layerCount);
+        VK_CHECK_RESULT(vkEnumerateDeviceLayerProperties(device, &layerCount, deviceLayers.data()));
+        
+        return deviceLayers;
+    }
 
 	std::vector<VkSurfaceFormatKHR> VulkanRenderAPI::GetPhysicalDeviceSurfaceFormatsKHR(const VkPhysicalDevice& device, const VkSurfaceKHR& surface) const
 	{

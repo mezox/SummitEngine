@@ -37,6 +37,7 @@ namespace PAL::RenderAPI
 		std::vector<VkLayerProperties> EnumerateInstanceLayerProperties() const;
 		std::vector<VkPhysicalDevice> EnumeratePhysicalDevices() const;
 		std::vector<VkExtensionProperties> EnumerateDeviceExtensionProperties(const VkPhysicalDevice& device) const;
+        std::vector<VkLayerProperties> EnumerateDeviceLayerProperties(const VkPhysicalDevice& device) const;
 
 		// this has to be called before creating queues
 		std::vector<VkQueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties(const VkPhysicalDevice& device) const;
@@ -98,6 +99,7 @@ namespace PAL::RenderAPI
 		PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices{ nullptr };
 		PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties{ nullptr };
 		PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties{ nullptr };
+        PFN_vkEnumerateDeviceLayerProperties vkEnumerateDeviceLayerProperties{ nullptr };
 		PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties{ nullptr };
 		PFN_vkGetPhysicalDeviceFeatures vkGetPhysicalDeviceFeatures{ nullptr };
 

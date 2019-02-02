@@ -21,15 +21,10 @@ include_directories(
 set(PRIVATE_SOURCES
 	Private/Vulkan/VulkanLoaderHelper.h
 	Private/Vulkan/VulkanDevice.cpp
-
-	Private/Vulkan/VulkanSwapChainImpl.h
-	Private/Vulkan/VulkanSwapChainImpl.cpp
-
 	Private/Vulkan/VulkanImplAny.cpp
 )
 
 set(PUBLIC_SOURCES
-	Public/PAL/RenderAPI/SwapChain.h
 	Public/PAL/RenderAPI/VulkanAPI.h
 	Public/PAL/RenderAPI/VulkanDevice.h
 )
@@ -88,3 +83,5 @@ configure_platform_file(${PROJECT_NAME} Public/PAL/RenderAPI "${PUBLIC_SOURCES}"
 add_library(${PROJECT_NAME} ${PUBLIC_SOURCES} ${PRIVATE_SOURCES})
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
 target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Public/ ${PLATFORM_INTERFACES})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "${IDE_PROJECT_FOLDER}")
