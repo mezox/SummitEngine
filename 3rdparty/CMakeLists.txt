@@ -8,6 +8,7 @@ set(DOCTEST_NO_INSTALL ON)
 
 set(IDE_PROJECT_FOLDER "3rdParty")
 
+add_subdirectory(imgui)
 add_subdirectory(doctest)
 add_subdirectory(json)
 add_subdirectory(microprofile)
