@@ -2,8 +2,17 @@
 
 #include <Event/Event.h>
 
-namespace App
+#include <cstdint>
+
+namespace Application
 {
+    class WindowWillCloseEvent : public Event::IEvent
+    {
+    public:
+        WindowWillCloseEvent() = default;
+        ~WindowWillCloseEvent() = default;
+    };
+    
 	class WindowResizeEvent : public Event::IEvent
     {
     public:

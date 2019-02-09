@@ -1,6 +1,6 @@
 #import <Cocoa/Cocoa.h>
 
-#include "Window.h"
+#include <Engine/Window.h>
 
 @interface SummitWindowDelegate : NSObject
 {

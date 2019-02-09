@@ -1,7 +1,7 @@
 #import "SummitWindow.h"
 
 #include <Event/EventService.h>
-#include "WindowEvent.h"
+#include <Engine/WindowEvent.h>
 
 using namespace Event;
 
@@ -16,19 +16,24 @@ using namespace Event;
 
 - (BOOL)windowShouldClose:(id)sender
 {
-    return NO;
+    return YES;
+}
+
+- (BOOL)releasedWhenClosed:(id)sender
+{
+    return YES;
 }
 
 - (void)windowDidResize:(NSNotification *)notification
 {
-    NSRect rect = [window frame];
-    EventServiceLocator::Service().FireEvent(App::WindowResizeEvent(rect.size.width, rect.size.height));
+    NSRect rect = [window.contentView frame];
+    //EventServiceLocator::Service().FireEvent(Application::WindowResizeEvent(rect.size.width, rect.size.height));
 }
 
 - (void)windowDidMove:(NSNotification *)notification
 {
     NSRect rect = [window frame];
-    EventServiceLocator::Service().FireEvent(App::WindowMoveEvent(rect.origin.x , rect.origin.y));
+    EventServiceLocator::Service().FireEvent(Application::WindowMoveEvent(rect.origin.x , rect.origin.y));
 }
 
 - (void)windowDidMiniaturize:(NSNotification *)notification
@@ -39,6 +44,11 @@ using namespace Event;
 - (void)windowDidDeminiaturize:(NSNotification *)notification
 {
     
+}
+
+- (void)windowWillClose:(NSNotification *)notification
+{
+    EventServiceLocator::Service().FireEvent(Application::WindowWillCloseEvent());
 }
 @end
 
