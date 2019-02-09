@@ -1,33 +1,66 @@
 #pragma once
 
-#include "EngineBase.h"
-#include <memory>
+#include <Engine/EngineBase.h>
+#include <Event/EventHandler.h>
+    
+#include <vector>
+    
+namespace Application
+{
+    class WindowResizeEvent;
+    class WindowMoveEvent;
+    class Window;
+}
 
+namespace Renderer
+{
+    class IRenderer;
+}
+    
 namespace Engine
 {
-	class ENGINE_API IEngine
-	{
-	public:
-		virtual ~IEngine() = default;
+    class ENGINE_API SummitEngine
+    {
+    public:
+        SummitEngine();
+        ~SummitEngine() {}
+        
+        Application::Window* CreateWindow(const char* title, uint32_t width, uint32_t height) const;
+        void RegisterWindow(Application::Window* window);
+        
+        void Initialize();
+        void StartFrame();
+        void Update();
+        void EndFrame();
+        void DeInitialize();
+        
+        Renderer::IRenderer& GetRenderer();
+        
+        void Run();
+        
+    private:
+        void OnWindowResize(const Application::WindowResizeEvent& event);
+        void OnWindowMove(const Application::WindowMoveEvent& event);
+        
+    private:
+        std::vector<Application::Window*> mWindows;
+        std::shared_ptr<Renderer::IRenderer> mRenderer;
+        
+        Event::EventHandlerFunc<SummitEngine, Application::WindowResizeEvent> mWindowResizeHandler;
+        Event::EventHandlerFunc<SummitEngine, Application::WindowMoveEvent> mWindowMoveHandler;
+    };
 
-        virtual void Initialize() = 0;
-        virtual void StartFrame() = 0;
-		virtual void Update() = 0;
-		virtual void EndFrame() = 0;
-        virtual void DeInitialize() = 0;
-	};
-
-    ENGINE_API std::shared_ptr<IEngine> CreateEngineService();
+    ENGINE_API std::shared_ptr<SummitEngine> CreateEngineService();
 
 	class ENGINE_API EngineServiceLocator
 	{
 	public:
-		static void Provide(std::shared_ptr<IEngine> service)
+		static void Provide(std::shared_ptr<SummitEngine> service)
 		{
 			mService = std::move(service);
 		}
 
-		static std::shared_ptr<IEngine> Service()
+		static std::shared_ptr<SummitEngine> Service()
 		{
 			return mService;
 		}
@@ -38,6 +71,6 @@ namespace Engine
 		}
 
 	private:
-		static std::shared_ptr<IEngine> mService;
+		static std::shared_ptr<SummitEngine> mService;
 	};
 }

@@ -12,9 +12,7 @@ include_directories(
 )
 
 set(EXTERNAL_DEPENDENCIES
-	FileSystem
-	Logging
-#	RenderAPI
+    Microprofile
 )
 
 set(DEPENDENCIES
@@ -23,21 +21,27 @@ set(DEPENDENCIES
 	RenderAPI
     Event
     Timer
+    Math
 )
 
 # platform agnostic source files
 set(PRIVATE_SOURCES
 	Private/EngineImpl.h
 	Private/EngineImpl.cpp
-	Private/Window.h
-	Private/WindowEvent.h
-	Private/Renderer.h
 	Private/VulkanRendererImpl.h
 	Private/VulkanRendererImpl.cpp
+	Private/VulkanBuffer.h
+	Private/VulkanSwapChainImpl.h
+	Private/VulkanSwapChainImpl.cpp
 )
 
 set(PUBLIC_SOURCES
 	Public/Engine/Engine.h
+	Public/Engine/SwapChain.h
+    Public/Engine/Window.h
+    Public/Engine/WindowEvent.h
+    Public/Engine/Renderer.h
+    Public/Engine/VertexBuffer.h
 )
 
 # platform dependant settings
@@ -94,3 +98,9 @@ configure_platform_file(${PROJECT_NAME} Public/Engine "${PUBLIC_SOURCES}")
 add_library(${PROJECT_NAME} ${PUBLIC_SOURCES} ${PRIVATE_SOURCES})
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} ${EXTERNAL_DEPENDENCIES})
 target_include_directories(${PROJECT_NAME} INTERFACE "Public")
+
+ide_source_files_group( ${PUBLIC_SOURCES}
+                        ${PRIVATE_SOURCES}
+                        ${PRECOMPILED_SOURCE}
+                        ${PRECOMPILED_HEADER}
+)
