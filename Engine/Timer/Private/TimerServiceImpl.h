@@ -18,5 +18,8 @@ namespace Timer
         
     private:
         std::thread mThread;
+        std::function<void()> mFunc;
+        
+        bool mIsRunning{ false };
     };
 }

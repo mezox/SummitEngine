@@ -3,6 +3,8 @@
 #include <Logging/LoggingService.h>
 #include <pthread.h>
 
+#include <microprofile/microprofile.h>
+
 namespace Timer
 {
     std::unique_ptr<ITimerService> TimerServiceLocator::mService = nullptr;
@@ -14,11 +16,16 @@ namespace Timer
     
     TimerServiceImpl::TimerServiceImpl()
     {
-        CreateThread();
     }
     
     uint32_t TimerServiceImpl::Schedule(uint32_t deltaTime, std::function<void()>&& f, bool repeat)
     {
+        if(!mIsRunning)
+        {
+            CreateThread();
+        }
+        
+        mFunc = f;
         return 0;
     }
     
@@ -26,6 +33,7 @@ namespace Timer
     {
         mThread = std::thread([this](){
             pthread_setname_np("TimerService");
+            MicroProfileOnThreadCreate("Timer");
             Worker();
         });
     }
@@ -34,11 +42,11 @@ namespace Timer
     {
         uint32_t secondsRunning = 0;
         
+        //std::this_thread::sleep_for(std::chrono::seconds(3));
+        
         while(1)
-        {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            LOG(Debug) << "Engine running for: " << secondsRunning << " seconds";
-            ++secondsRunning;
+        {            
+            mFunc();
         }
     }
 }

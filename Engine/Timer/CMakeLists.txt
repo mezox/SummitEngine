@@ -15,7 +15,7 @@ include_directories(
 
 # Platform agnostic dependencies
 set(EXTERNAL_DEPENDENCIES
-	
+	Microprofile
 )
 
 set(DEPENDENCIES
