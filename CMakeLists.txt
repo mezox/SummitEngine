@@ -6,6 +6,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(ENABLE_CLANG_TIDY OFF)
 
+# Enable project groupping in IDE
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+macro(ide_source_files_group)
+	foreach(source_file ${ARGN})
+		string(REGEX REPLACE "/?[^/]+$" "" folder ${source_file})
+        set(folder "${_target_folder}/${folder}")
+        string(REPLACE "/" "\\" folder ${folder})
+
+		source_group(${folder} FILES ${source_file})
+	endforeach()
+endmacro()
+
 if (CMAKE_GENERATOR STREQUAL Xcode)
 	macro(target_set_precompiled_header target pch pcs)
 		set_property(TARGET ${target} PROPERTY XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER YES)
@@ -118,4 +131,4 @@ add_subdirectory(Engine)
 add_subdirectory(Application)
 
 #add_executable(TestApp main.cpp)
-#target_link_libraries(TestApp doctest FileSystem)
+#target_link_libraries(TestApp doctest Math)

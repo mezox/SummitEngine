@@ -58,3 +58,9 @@ add_library(${PROJECT_NAME}
 target_set_precompiled_header(${PROJECT_NAME} ${PRECOMPILED_HEADER} ${PRECOMPILED_SOURCE})
 target_include_directories(${PROJECT_NAME} INTERFACE "Public")
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} ${EXTERNAL_DEPENDENCIES})
+
+ide_source_files_group( ${PUBLIC_SOURCES}
+                        ${PRIVATE_SOURCES}
+                        ${PRECOMPILED_SOURCE}
+                        ${PRECOMPILED_HEADER}
+)
