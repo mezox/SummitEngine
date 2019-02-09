@@ -32,7 +32,7 @@ void VulkanImplMacOS::PlatformLoadInstanceExtensions()
 	}
 	else
 	{
-		LOG(Warn) << "Extension: " << VK_MVK_MACOS_SURFACE_EXTENSION_NAME << " not available.";
+		LOG(Warning) << "Extension: " << VK_MVK_MACOS_SURFACE_EXTENSION_NAME << " not available.";
 	}
 }
 

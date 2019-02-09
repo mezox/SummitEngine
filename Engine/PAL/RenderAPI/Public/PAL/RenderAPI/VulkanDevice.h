@@ -35,7 +35,7 @@ namespace PAL::RenderAPI
 
 		void CreateSwapchainKHR(const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const;
 		void DestroySwapchainKHR(VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const;
-        void AcquireNextImageKHR(VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const;
+        VkResult AcquireNextImageKHR(VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const;
         void QueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const;
         std::vector<VkImage> GetSwapchainImagesKHR(VkSwapchainKHR swapchain) const;
         
@@ -74,6 +74,35 @@ namespace PAL::RenderAPI
         
         void CreateSemaphore(const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore) const;
         void DestroySemaphore(VkSemaphore semaphore, const VkAllocationCallbacks* pAllocator) const;
+        
+        VkResult CreateFence(const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const;
+        VkResult WaitForFences(uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout) const;
+        VkResult ResetFences(uint32_t fenceCount, const VkFence* pFences) const;
+        void DestroyFence(VkFence fence, const VkAllocationCallbacks* pAllocator) const;
+        
+        VkResult CreateBuffer(const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) const;
+        void GetBufferMemoryRequirements(VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements) const;
+        VkResult BindBufferMemory(VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) const;
+        void DestroyBuffer(VkBuffer buffer, const VkAllocationCallbacks* pAllocator) const;
+        
+        VkResult AllocateMemory(const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory) const;
+        void FreeMemory(VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator) const;
+        VkResult MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) const;
+        void UnmapMemory(VkDeviceMemory memory) const;
+        
+        VkResult QueueWaitIdle(VkQueue queue) const;
+        
+        // Command buffers
+        void CmdBindVertexBuffer(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) const;
+        void CmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const;
+        void CmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const;
+        void CmdDrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const;
+        
+        // Descriptors        
+        VkResult CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const;
+        void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator) const;
+        VkResult CreateDescriptorPool(const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool) const;
+        void DestroyDescriptorPool(VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator) const;
 
 	private:
 		void LoadFunctions(PFN_vkGetDeviceProcAddr loadFunc);
@@ -113,16 +142,47 @@ namespace PAL::RenderAPI
         PFN_vkBeginCommandBuffer vkBeginCommandBuffer{ nullptr };
         PFN_vkEndCommandBuffer vkEndCommandBuffer{ nullptr };
         PFN_vkResetCommandBuffer vkResetCommandBuffer{ nullptr };
-
+        PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers{ nullptr };
+        PFN_vkCmdCopyBuffer vkCmdCopyBuffer{ nullptr };
+        
+        PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer{ nullptr };
+        PFN_vkCmdDrawIndexed vkCmdDrawIndexed{ nullptr };
+        
 		PFN_vkDestroyDevice vkDestroyDevice{ nullptr };
         PFN_vkDeviceWaitIdle vkDeviceWaitIdle{ nullptr };
         PFN_vkQueueSubmit vkQueueSubmit{ nullptr };
+        PFN_vkQueueWaitIdle vkQueueWaitIdle{ nullptr };
         
         PFN_vkCreateImageView vkCreateImageView{ nullptr };
         PFN_vkDestroyImageView vkDestroyImageView{ nullptr };
         
+        // Descriptors
+        PFN_vkCreateDescriptorSetLayout vkCreateDescriptorSetLayout{ nullptr };
+        PFN_vkDestroyDescriptorSetLayout vkDestroyDescriptorSetLayout{ nullptr };
+        PFN_vkCreateDescriptorPool vkCreateDescriptorPool{ nullptr };
+        PFN_vkDestroyDescriptorPool vkDestroyDescriptorPool{ nullptr };
+        
+        // Buffers
+        PFN_vkCreateBuffer vkCreateBuffer{ nullptr };
+        PFN_vkGetBufferMemoryRequirements vkGetBufferMemoryRequirements{ nullptr };
+        PFN_vkBindBufferMemory vkBindBufferMemory{ nullptr };
+        PFN_vkDestroyBuffer vkDestroyBuffer{ nullptr };
+        
+        // Memory
+        PFN_vkAllocateMemory vkAllocateMemory{ nullptr };
+        PFN_vkFreeMemory vkFreeMemory{ nullptr };
+        PFN_vkMapMemory vkMapMemory{ nullptr };
+        PFN_vkUnmapMemory vkUnmapMemory{ nullptr };
+        
+        // Semaphores
         PFN_vkCreateSemaphore vkCreateSemaphore{ nullptr };
         PFN_vkDestroySemaphore vkDestroySemaphore{ nullptr };
+        
+        // Fences
+        PFN_vkCreateFence vkCreateFence{ nullptr };
+        PFN_vkDestroyFence vkDestroyFence{ nullptr };
+        PFN_vkWaitForFences vkWaitForFences{ nullptr };
+        PFN_vkResetFences vkResetFences{ nullptr };
 
 		// VK_KHR_swapchain extension
 		PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR{ nullptr };

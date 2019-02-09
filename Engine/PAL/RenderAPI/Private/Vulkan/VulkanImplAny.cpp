@@ -292,6 +292,7 @@ namespace PAL::RenderAPI
         LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumerateDeviceLayerProperties);
 		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceQueueFamilyProperties);
 		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceFeatures);
+        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceMemoryProperties);
 		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkCreateDevice);
 		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetDeviceProcAddr);
     }
@@ -308,7 +309,7 @@ namespace PAL::RenderAPI
         }
         else
         {
-            LOG(Warn) << "Extension: " << VK_EXT_DEBUG_UTILS_EXTENSION_NAME << " not available.";
+            LOG(Warning) << "Extension: " << VK_EXT_DEBUG_UTILS_EXTENSION_NAME << " not available.";
         }
 
 		if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
@@ -321,7 +322,7 @@ namespace PAL::RenderAPI
 		}
 		else
 		{
-			LOG(Warn) << "Extension: " << VK_KHR_SURFACE_EXTENSION_NAME << " not available.";
+			LOG(Warning) << "Extension: " << VK_KHR_SURFACE_EXTENSION_NAME << " not available.";
 		}
     }
     
@@ -408,6 +409,11 @@ namespace PAL::RenderAPI
 		VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(device, queueFamilyIndex, surface, &supported));
 		return supported;
 	}
+    
+    void VulkanRenderAPI::GetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties) const
+    {
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
+    }
 
 	VkSurfaceCapabilitiesKHR VulkanRenderAPI::GetPhysicalDeviceSurfaceCapabilitiesKHR(const VkPhysicalDevice& device, const VkSurfaceKHR& surface) const
 	{

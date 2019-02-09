@@ -1,7 +1,6 @@
 #pragma once
 
 #include <PAL/RenderAPI/RenderAPIBase.h>
-#include <Core/Service.h>
 
 #ifndef VK_NO_PROTOTYPES
 #   define VK_NO_PROTOTYPES
@@ -50,6 +49,7 @@ namespace PAL::RenderAPI
 		std::vector<VkSurfaceFormatKHR> GetPhysicalDeviceSurfaceFormatsKHR(const VkPhysicalDevice& device, const VkSurfaceKHR& surface) const;
 		std::vector<VkPresentModeKHR> GetPhysicalDeviceSurfacePresentModesKHR(const VkPhysicalDevice& device, const VkSurfaceKHR& surface) const;
 		VkBool32 GetPhysicalDeviceSurfaceSupportKHR(const VkPhysicalDevice& device, uint32_t queueFamilyIndex, const VkSurfaceKHR& surface) const;
+        void GetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties) const;
 
 
 		void DestroySurface(const VkSurfaceKHR& surface) const;
@@ -102,6 +102,7 @@ namespace PAL::RenderAPI
         PFN_vkEnumerateDeviceLayerProperties vkEnumerateDeviceLayerProperties{ nullptr };
 		PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties{ nullptr };
 		PFN_vkGetPhysicalDeviceFeatures vkGetPhysicalDeviceFeatures{ nullptr };
+        PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties{ nullptr };
 
 		// VK_EXT_debug_utils
 		PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT{ nullptr };

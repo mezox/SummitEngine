@@ -32,9 +32,11 @@ namespace PAL::RenderAPI
 		vkDestroySwapchainKHR(mLogicalDevice, swapchain, pAllocator);
 	}
     
-    void VulkanDevice::AcquireNextImageKHR(VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const
+    VkResult VulkanDevice::AcquireNextImageKHR(VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const
     {
-       VK_CHECK_RESULT(vkAcquireNextImageKHR(mLogicalDevice, swapchain, timeout, semaphore, fence, pImageIndex));
+        const auto result = vkAcquireNextImageKHR(mLogicalDevice, swapchain, timeout, semaphore, fence, pImageIndex);
+        VK_CHECK_RESULT(result);
+        return result;
     }
     
     void VulkanDevice::QueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const
@@ -184,6 +186,131 @@ namespace PAL::RenderAPI
     {
        vkDestroySemaphore(mLogicalDevice, semaphore, pAllocator);
     }
+    
+    VkResult VulkanDevice::CreateFence(const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const
+    {
+        const auto result = vkCreateFence(mLogicalDevice, pCreateInfo, pAllocator, pFence);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    VkResult VulkanDevice::WaitForFences(uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout) const
+    {
+        const auto result = vkWaitForFences(mLogicalDevice, fenceCount, pFences, waitAll, timeout);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    VkResult VulkanDevice::ResetFences(uint32_t fenceCount, const VkFence* pFences) const
+    {
+        const auto result = vkResetFences(mLogicalDevice, fenceCount, pFences);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::DestroyFence(VkFence fence, const VkAllocationCallbacks* pAllocator) const
+    {
+        vkDestroyFence(mLogicalDevice, fence, pAllocator);
+    }
+    
+    VkResult VulkanDevice::CreateBuffer(const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) const
+    {
+        const auto result = vkCreateBuffer(mLogicalDevice, pCreateInfo, pAllocator, pBuffer);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::GetBufferMemoryRequirements(VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements) const
+    {
+        vkGetBufferMemoryRequirements(mLogicalDevice, buffer, pMemoryRequirements);
+    }
+    
+    VkResult VulkanDevice::BindBufferMemory(VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) const
+    {
+        const auto result = vkBindBufferMemory(mLogicalDevice, buffer, memory, memoryOffset);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::DestroyBuffer(VkBuffer buffer, const VkAllocationCallbacks* pAllocator) const
+    {
+        vkDestroyBuffer(mLogicalDevice, buffer, pAllocator);
+    }
+    
+    VkResult VulkanDevice::AllocateMemory(const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory) const
+    {
+        const auto result = vkAllocateMemory(mLogicalDevice, pAllocateInfo, pAllocator, pMemory);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::FreeMemory(VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator) const
+    {
+        vkFreeMemory(mLogicalDevice, memory, pAllocator);
+    }
+    
+    VkResult VulkanDevice::MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) const
+    {
+        const auto result = vkMapMemory(mLogicalDevice, memory, offset, size, flags, ppData);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::UnmapMemory(VkDeviceMemory memory) const
+    {
+        vkUnmapMemory(mLogicalDevice, memory);
+    }
+    
+    VkResult VulkanDevice::QueueWaitIdle(VkQueue queue) const
+    {
+        const auto result = vkQueueWaitIdle(queue);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::CmdBindVertexBuffer(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) const
+    {
+        vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
+    }
+    
+    void VulkanDevice::CmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const
+    {
+        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
+    }
+    
+    void VulkanDevice::CmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const
+    {
+        vkCmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
+    }
+    
+    void VulkanDevice::CmdDrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const
+    {
+        vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+    }
+    
+    VkResult VulkanDevice::CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const
+    {
+        const auto result = vkCreateDescriptorSetLayout(mLogicalDevice, pCreateInfo, pAllocator, pSetLayout);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator) const
+    {
+        vkDestroyDescriptorSetLayout(mLogicalDevice, descriptorSetLayout, pAllocator);
+    }
+    
+    VkResult VulkanDevice::CreateDescriptorPool(const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool) const
+    {
+        const auto result = vkCreateDescriptorPool(mLogicalDevice, pCreateInfo, pAllocator, pDescriptorPool);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::DestroyDescriptorPool(VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator) const
+    {
+        vkDestroyDescriptorPool(mLogicalDevice, descriptorPool, pAllocator);
+    }
 
 	void VulkanDevice::LoadFunctions(PFN_vkGetDeviceProcAddr loadFunc)
 	{
@@ -207,6 +334,13 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdEndRenderPass);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindPipeline);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdDraw);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindIndexBuffer);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdDrawIndexed);
+        
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateDescriptorSetLayout);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyDescriptorSetLayout);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateDescriptorPool);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyDescriptorPool);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateFramebuffer);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyFramebuffer);
@@ -222,6 +356,27 @@ namespace PAL::RenderAPI
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateSemaphore);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroySemaphore);
+        
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateBuffer);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkGetBufferMemoryRequirements);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkBindBufferMemory);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyBuffer);
+        
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkAllocateMemory);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkMapMemory);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkFreeMemory);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkUnmapMemory);
+        
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateFence);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkWaitForFences);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkResetFences);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyFence);
+        
+        // Command buffers
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindVertexBuffers);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdCopyBuffer);
+        
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkQueueWaitIdle);
 
 		if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME))
 		{
@@ -233,7 +388,7 @@ namespace PAL::RenderAPI
 		}
 		else
 		{
-			LOG(Warn) << "Device Extension: " << VK_KHR_SWAPCHAIN_EXTENSION_NAME << " not available.";
+			LOG(Warning) << "Device Extension: " << VK_KHR_SWAPCHAIN_EXTENSION_NAME << " not available.";
 		}
 	}
     
