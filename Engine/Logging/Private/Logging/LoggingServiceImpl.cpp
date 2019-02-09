@@ -126,7 +126,7 @@ namespace Logging
         using namespace PAL::FileSystem;
         
 #ifndef _WIN32
-        File configFile("/Users/tomaskubovcik/Dev/SummitEngine/logging_config.json");
+        File configFile("logging_config.json");
 #else
 		File configFile("C:/Users/Tomas/Dev/SummitEngine/logging_config.json");
 #endif

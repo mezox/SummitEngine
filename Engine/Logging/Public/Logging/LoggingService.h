@@ -8,7 +8,7 @@
     if(Logging::LoggingServiceLocator::Service().GetLogger(LOGGER_ID)) \
         Logging::Composer(*Logging::LoggingServiceLocator::Service().GetLogger(LOGGER_ID), 0, id, severity)
 
-#define LOG(severity) LOG_MSG_MODULE(LOG_MODULE_ID, Logging::Severity::Information)
+#define LOG(severity) LOG_MSG_MODULE(LOG_MODULE_ID, Logging::Severity::severity)
 
 /// 4 byte composed of chars can be used to identify module like id = LOG_MODULE_4BYTE('C','O','R','E')
 #define LOG_MODULE_4BYTE(b1,b2,b3,b4) ((int)(b1) + ((int)(b2) << 8) + ((int)(b3) << 16) + ((int)(b4) << 24))
