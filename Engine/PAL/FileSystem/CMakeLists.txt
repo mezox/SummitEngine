@@ -48,6 +48,16 @@ elseif(PLATFORM_WINDOWS)
 		Private/Windows/FileSystemServiceImpl.cpp
 		Private/Windows/FileSystemTests.inl
 	)
+elseif(PLATFORM_APPLE_IOS)
+	set(OBJECTIVE_C_SOURCES
+		Private/iOS/FileSystemServiceImpl.cpp
+	)
+
+	list(APPEND PRIVATE_SOURCES
+		${OBJECTIVE_C_SOURCES}
+	)
+
+	set_objective_c_compilation(${OBJECTIVE_C_SOURCES})
 endif()
 
 configure_platform_file(${PROJECT_NAME} Public/PAL/FileSystem "${PUBLIC_SOURCES}")
@@ -55,3 +65,5 @@ configure_platform_file(${PROJECT_NAME} Public/PAL/FileSystem "${PUBLIC_SOURCES}
 add_library(${PROJECT_NAME} ${PUBLIC_SOURCES} ${PRIVATE_SOURCES})
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} ${EXTERNAL_DEPENDENCIES})
 target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Public/)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "${IDE_PROJECT_FOLDER}")

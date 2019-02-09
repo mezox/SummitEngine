@@ -8,7 +8,7 @@
 #undef LOG_MODULE_ID
 #endif
 
-#define LOG_MODULE_ID LOG_MODULE_4BYTE('M','F','S',' ')
+#define LOG_MODULE_ID LOG_MODULE_4BYTE('I','F','S',' ')
 
 using namespace PAL::FileSystem;
 
@@ -45,15 +45,19 @@ FileSystemServiceImpl::~FileSystemServiceImpl()
 void FileSystemServiceImpl::Initialize()
 {
     mNativeFileSystem->mFileManager = [NSFileManager defaultManager];
-    mNativeFileSystem->mWritableFolder = [[[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"SummitEngine"] copy];
+    mNativeFileSystem->mWritableFolder = [[[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"summitEngine"] copy];
     mNativeFileSystem->mReadableFolder = [[[NSBundle mainBundle] bundlePath] copy];
 }
         
 FileHandle FileSystemServiceImpl::FileOpen(const std::string& filePath, EFileAccessMode mode) const
 {
     NSString* nsFilePath = [NSString stringWithUTF8String:filePath.c_str()];
+    NSString* bundlePath = [[NSBundle bundleWithIdentifier:@"com.summit.engine"] bundlePath];
+    NSString* bundleFilePath = [bundlePath stringByAppendingPathComponent:nsFilePath];
     
-    if([mNativeFileSystem->mFileManager fileExistsAtPath:nsFilePath])
+    auto strWritableDir = [[[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"summit"] copy];
+
+    if([mNativeFileSystem->mFileManager fileExistsAtPath:bundleFilePath])
     {
         @autoreleasepool
         {
@@ -61,7 +65,7 @@ FileHandle FileSystemServiceImpl::FileOpen(const std::string& filePath, EFileAcc
 
             if (mode == EFileAccessMode::Read)
             {
-                handle = [NSFileHandle fileHandleForReadingAtPath:nsFilePath];
+                handle = [NSFileHandle fileHandleForReadingAtPath:bundleFilePath];
             }
             else if(mode == EFileAccessMode::Write)
             {
@@ -78,11 +82,13 @@ FileHandle FileSystemServiceImpl::FileOpen(const std::string& filePath, EFileAcc
     {
         @autoreleasepool
         {
-            NSString* bundleFilePath = [mNativeFileSystem->mWritableFolder stringByAppendingPathComponent:nsFilePath];
-            
-            const bool status = [mNativeFileSystem->mFileManager createFileAtPath:bundleFilePath contents:nil attributes:nil];
-            
             NSFileHandle *handle{ nil };
+            
+            auto strWritableDir = [[[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"summit"] copy];
+            NSString* bundleFilePath = [strWritableDir stringByAppendingPathComponent:nsFilePath];
+            
+            bool status = [mNativeFileSystem->mFileManager createFileAtPath:bundleFilePath contents:nil attributes:nil];
+            
             if(mode == EFileAccessMode::Write)
             {
                 handle = [NSFileHandle fileHandleForWritingAtPath:bundleFilePath];
