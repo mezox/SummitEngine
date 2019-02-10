@@ -1,8 +1,10 @@
 #pragma once
 
+#include "RendererBase.h"
+#include "DeviceObject.h"
+
 #include <Math/Vector2.h>
 #include <Math/Vector3.h>
-
 #include <PAL/RenderAPI/VulkanAPI.h>
 
 #include <array>
@@ -32,8 +34,6 @@ operator &(T lhs, T rhs)
 
 namespace Renderer
 {
-    class RendererResource;
-    
     enum class BufferUsage
     {
         VertexBuffer = 0,
@@ -59,13 +59,7 @@ namespace Renderer
         Instance
     };
     
-    enum class VertexStreamDataType
-    {
-        Data,
-        Index
-    };
-    
-    struct BufferDesc
+    struct RENDERER_API BufferDesc
     {
         BufferUsage usage;
         SharingMode sharingMode;
@@ -74,34 +68,51 @@ namespace Renderer
         void* data{ nullptr };
     };
     
-    class VertexBufferStreamBase
+    enum class CommitCommand
     {
+        Commit,
+        CommitDiscard,
+        Discard
+    };
+    
+    class RENDERER_API VertexBufferStreamBase
+    {
+        struct StreamData
+        {
+            void* data{ nullptr };
+            uint32_t count{ 0 };
+            uint32_t stride{ 0 };
+        };
+        
     public:
-        explicit VertexBufferStreamBase(VertexStreamDataType dataType) : mDataType(dataType) {}
+        explicit VertexBufferStreamBase(BufferUsage dataType);
         virtual ~VertexBufferStreamBase() = default;
         
-        const bool IsDiscarded() const { return mIsDiscarded; }
-        const bool IsCommited() const { return mIsCommited; }
+        const bool IsDiscarded() const;
+        const bool IsCommited() const;
         
-        VertexDataInputRate GetVertexInputRate() const { return mInputRate; }
-        VertexStreamDataType GetDataType() const { return mDataType; }
+        VertexDataInputRate GetVertexInputRate() const;
+        BufferUsage GetDataType() const;
         
-        std::unique_ptr<RendererResource>& GetDeviceResource() { return mGpuBuffer; }
-        const RendererResource* GetDeviceResourcePtr() { return mGpuBuffer.get(); }
+        DeviceObject& GetDeviceResource();
+        const DeviceObject& GetDeviceResourcePtr() const;
+        
+        bool Commit(CommitCommand);
         
     protected:
+        DeviceObject mGpuBuffer;
+        StreamData mStreamData;
         bool mIsCommited{ false };
         bool mIsDiscarded{ false };
-        std::unique_ptr<RendererResource> mGpuBuffer;
         VertexDataInputRate mInputRate{ VertexDataInputRate::Vertex };
-        VertexStreamDataType mDataType{ VertexStreamDataType::Data };
+        BufferUsage mDataType{ BufferUsage::VertexBuffer };
     };
     
     template<typename T>
     class VertexBufferStream : public VertexBufferStreamBase
     {
     public:
-        VertexBufferStream(VertexStreamDataType dataType) : VertexBufferStreamBase(dataType) {}
+        VertexBufferStream(BufferUsage dataType) : VertexBufferStreamBase(dataType) {}
         
         std::vector<T>& GetData()
         {
@@ -136,11 +147,25 @@ namespace Renderer
             mIsDiscarded = true;
         }
         
+        void Lock(CommitCommand cmd)
+        {
+            mStreamData.count = mData.size();
+            mStreamData.stride = sizeof(T);
+            mStreamData.data = mData.data();
+            
+            Commit(cmd);
+            
+            if(cmd == CommitCommand::CommitDiscard || cmd == CommitCommand::Discard)
+            {
+                Discard();
+            }
+        }
+        
     private:
         std::vector<T> mData;
     };
     
-    class VertexBufferBase
+    class RENDERER_API VertexBufferBase
     {
     public:
         virtual ~VertexBufferBase() = default;
@@ -162,7 +187,7 @@ namespace Renderer
             uint32_t count{ 0 };
             for(const auto& stream : mStreams)
             {
-                if(stream->GetDataType() == VertexStreamDataType::Data)
+                if(stream->GetDataType() != BufferUsage::IndexBuffer)
                 {
                     ++count;
                 }
@@ -195,7 +220,7 @@ namespace Renderer
         {
             if(!mStreams[0])
             {
-                mStreams[0] = std::make_unique<VertexBufferStream<PositionType>>(VertexStreamDataType::Data);
+                mStreams[0] = std::make_unique<VertexBufferStream<PositionType>>(BufferUsage::VertexBuffer);
             }
             
             return (VertexBufferStream<PositionType>&)(*mStreams[0].get());
@@ -205,7 +230,7 @@ namespace Renderer
         {
             if(!mStreams[1])
             {
-                mStreams[1] = std::make_unique<VertexBufferStream<IndexType>>(VertexStreamDataType::Index);
+                mStreams[1] = std::make_unique<VertexBufferStream<IndexType>>(BufferUsage::IndexBuffer);
             }
             
             return (VertexBufferStream<IndexType>&)(*mStreams[1].get());
@@ -215,7 +240,7 @@ namespace Renderer
         {
             if(!mStreams[2])
             {
-                mStreams[2] = std::make_unique<VertexBufferStream<ColorType>>(VertexStreamDataType::Data);
+                mStreams[2] = std::make_unique<VertexBufferStream<ColorType>>(BufferUsage::VertexBuffer);
             }
             
             return (VertexBufferStream<ColorType>&)(*mStreams[2].get());

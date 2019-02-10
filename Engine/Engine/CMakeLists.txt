@@ -22,26 +22,18 @@ set(DEPENDENCIES
     Event
     Timer
     Math
+    Renderer
 )
 
 # platform agnostic source files
 set(PRIVATE_SOURCES
-	Private/EngineImpl.h
 	Private/EngineImpl.cpp
-	Private/VulkanRendererImpl.h
-	Private/VulkanRendererImpl.cpp
-	Private/VulkanBuffer.h
-	Private/VulkanSwapChainImpl.h
-	Private/VulkanSwapChainImpl.cpp
 )
 
 set(PUBLIC_SOURCES
 	Public/Engine/Engine.h
-	Public/Engine/SwapChain.h
     Public/Engine/Window.h
     Public/Engine/WindowEvent.h
-    Public/Engine/Renderer.h
-    Public/Engine/VertexBuffer.h
 )
 
 # platform dependant settings

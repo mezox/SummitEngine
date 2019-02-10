@@ -1,5 +1,6 @@
 #pragma once
 
+#include "WindowEvent.h"
 #include <Engine/EngineBase.h>
 #include <Event/EventHandler.h>
     
@@ -7,8 +8,6 @@
     
 namespace Application
 {
-    class WindowResizeEvent;
-    class WindowMoveEvent;
     class Window;
 }
 
@@ -34,8 +33,6 @@ namespace Engine
         void EndFrame();
         void DeInitialize();
         
-        Renderer::IRenderer& GetRenderer();
-        
         void Run();
         
     private:
@@ -44,7 +41,6 @@ namespace Engine
         
     private:
         std::vector<Application::Window*> mWindows;
-        std::shared_ptr<Renderer::IRenderer> mRenderer;
         
         Event::EventHandlerFunc<SummitEngine, Application::WindowResizeEvent> mWindowResizeHandler;
         Event::EventHandlerFunc<SummitEngine, Application::WindowMoveEvent> mWindowMoveHandler;

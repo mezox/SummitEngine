@@ -1,6 +1,9 @@
 #pragma once
 
+#include "RendererBase.h"
+
 #include <cstdint>
+#include <Renderer/DeviceObject.h>
 
 namespace Renderer
 {
@@ -11,7 +14,7 @@ namespace Renderer
     
     class SwapChainResource;
     
-    class SwapChain final
+    class RENDERER_API SwapChain final
     {
     public:
         ~SwapChain() = default;
@@ -24,6 +27,7 @@ namespace Renderer
         
     public:
         std::unique_ptr<SwapChainResource> mSwapChainResource;
+        DeviceObject mDeviceObject;
         
     private:
         ImageFormat mImageFormat;

@@ -1,5 +1,4 @@
-#include "EngineImpl.h"
-
+#include <Engine/Engine.h>
 #include <Logging/LoggingService.h>
 #include <Logging/Logger.h>
 
@@ -8,13 +7,12 @@
 #include <PAL/RenderAPI/VulkanAPI.h>
 #include <Event/EventService.h>
 #include <Timer/TimerService.h>
-#include "VulkanRendererImpl.h"
 
 #include <microprofile/microprofile.h>
 
 #include <Engine/Window.h>
 #include <Engine/WindowEvent.h>
-#include <Engine/Renderer.h>
+#include <Renderer/Renderer.h>
 
 
 #ifdef LOG_MODULE_ID
@@ -26,12 +24,12 @@
 MICROPROFILE_DEFINE(MAIN, "MAIN", "Main", 0xff0000);
 
 using namespace Engine;
+using namespace Renderer;
 using namespace Logging;
 using namespace Event;
 using namespace Timer;
 using namespace PAL::FileSystem;
 using namespace PAL::RenderAPI;
-
 
 std::shared_ptr<SummitEngine> EngineServiceLocator::mService = nullptr;
 
@@ -49,7 +47,7 @@ SummitEngine::SummitEngine()
     TimerServiceLocator::Provide(CreateTimerService());
     
     VulkanAPIServiceLocator::Provide(CreateVulkanRenderAPI());
-    mRenderer = std::make_unique<Renderer::VulkanRenderer>();
+    Renderer::RendererLocator::Provide(CreateRenderer());
     
     mWindowResizeHandler = EventHandlerFunc(true, this, &SummitEngine::OnWindowResize);
     mWindowMoveHandler = EventHandlerFunc(true, this, &SummitEngine::OnWindowMove);
@@ -63,7 +61,7 @@ void SummitEngine::Initialize()
 {        
     LoggingServiceLocator::Service().Initialize();
     VulkanAPIServiceLocator::Service().Initialize();
-    mRenderer->Initialize();
+    Renderer::RendererLocator::GetRenderer().Initialize();
     
     EventServiceLocator::Service().RegisterEventHandler(mWindowResizeHandler);
     EventServiceLocator::Service().RegisterEventHandler(mWindowMoveHandler);
@@ -71,7 +69,8 @@ void SummitEngine::Initialize()
 
 Application::Window* SummitEngine::CreateWindow(const char* title, uint32_t width, uint32_t height) const
 {
-    auto windowPtr = new Application::Window(*mRenderer.get(), title, width, height);
+    auto& renderer = Renderer::RendererLocator::GetRenderer();
+    auto windowPtr = new Application::Window(renderer, title, width, height);
     return windowPtr;
 }
 
@@ -105,7 +104,7 @@ void SummitEngine::EndFrame()
 
 void SummitEngine::DeInitialize()
 {
-    mRenderer.reset();
+    Renderer::RendererLocator::GetRenderer().Deinitialize();
     
     EventServiceLocator::Service().UnRegisterEventHandler(mWindowMoveHandler);
     EventServiceLocator::Service().UnRegisterEventHandler(mWindowResizeHandler);
@@ -114,11 +113,6 @@ void SummitEngine::DeInitialize()
     TimerServiceLocator::Provide(nullptr);
     
     MicroProfileShutdown();
-}
-
-Renderer::IRenderer& SummitEngine::GetRenderer()
-{
-    return *mRenderer.get();
 }
 
 void SummitEngine::Run()

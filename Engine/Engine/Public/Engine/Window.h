@@ -6,9 +6,8 @@
 #include <cstdint>
 
 #include "EngineBase.h"
-#include <Engine/SwapChain.h>
+#include <Renderer/SwapChain.h>
 #include <Event/EventHandler.h>
-#include "Renderer.h"
 
 namespace Renderer
 {

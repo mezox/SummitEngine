@@ -35,9 +35,9 @@ SwapChainVK::SwapChainVK(std::shared_ptr<VulkanDevice> device, const VkSurfaceKH
     : mDevice(std::move(device))
     , mSurface(surface)
 {
-    mWindowResizeHandler = EventHandlerFunc(true, this, &SwapChainVK::OnWindowResize);
+    //mWindowResizeHandler = EventHandlerFunc(true, this, &SwapChainVK::OnWindowResize);
     
-    EventServiceLocator::Service().RegisterEventHandler(mWindowResizeHandler);
+    //EventServiceLocator::Service().RegisterEventHandler(mWindowResizeHandler);
 }
 
 SwapChainVK::~SwapChainVK()
@@ -118,7 +118,7 @@ void SwapChainVK::Initialize(const uint32_t width, const uint32_t height)
     }
     
     
-    auto& renderer = (VulkanRenderer&)Engine::EngineServiceLocator::Service()->GetRenderer();
+    auto& renderer = (VulkanRenderer&)Renderer::RendererLocator::GetRenderer();
     
     mFramebuffers.resize(mImages.size());
 
@@ -149,7 +149,7 @@ void SwapChainVK::Destroy()
     mDevice->DestroySwapchainKHR(mHandle, nullptr);
     
     VulkanAPIServiceLocator::Service().DestroySurface(mSurface);
-    EventServiceLocator::Service().UnRegisterEventHandler(mWindowResizeHandler);
+    //EventServiceLocator::Service().UnRegisterEventHandler(mWindowResizeHandler);
 }
 
 void SwapChainVK::SetSemaphore(VkQueue present)
@@ -159,7 +159,7 @@ void SwapChainVK::SetSemaphore(VkQueue present)
 
 void SwapChainVK::SwapBuffers()
 {
-    auto& renderer = (VulkanRenderer&)Engine::EngineServiceLocator::Service()->GetRenderer();
+    auto& renderer = (VulkanRenderer&)Renderer::RendererLocator::GetRenderer();
     const auto& frameSync = renderer.GetFrameSyncData();
     
     mDevice->WaitForFences(1, &frameSync.frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
@@ -245,19 +245,19 @@ void SwapChainVK::DestroyFramebuffers()
     mFramebuffers.clear();
 }
 
-void SwapChainVK::OnWindowResize(const Application::WindowResizeEvent& event)
-{
-    LOG(Debug) << "Swap chain window resize";
-    
-    mDevice->WaitIdle();
-    
-    DestroyFramebuffers();
-    DestroyImageViews();
-    DestroyImages();
-    
-    mDevice->DestroySwapchainKHR(mHandle, nullptr);
-    
-    mImageIndex = 0;
-    
-    Initialize(event.width, event.height);
-}
+//void SwapChainVK::OnWindowResize(const Application::WindowResizeEvent& event)
+//{
+//    LOG(Debug) << "Swap chain window resize";
+//
+//    mDevice->WaitIdle();
+//
+//    DestroyFramebuffers();
+//    DestroyImageViews();
+//    DestroyImages();
+//
+//    mDevice->DestroySwapchainKHR(mHandle, nullptr);
+//
+//    mImageIndex = 0;
+//
+//    Initialize(event.width, event.height);
+//}

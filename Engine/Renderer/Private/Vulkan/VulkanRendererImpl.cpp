@@ -1,5 +1,6 @@
 #include "VulkanRendererImpl.h"
 
+#include <Renderer/VertexBuffer.h>
 #include <PAL/RenderAPI/VulkanAPI.h>
 #include <PAL/RenderAPI/VulkanDevice.h>
 #include <PAL/FileSystem/File.h>
@@ -7,10 +8,6 @@
 #include <Logging/LoggingService.h>
 
 #include "VulkanSwapChainImpl.h"
-
-#include <Engine/VertexBuffer.h>
-
-#include "VulkanBuffer.h"
 
 #ifdef LOG_MODULE_ID
 #undef LOG_MODULE_ID
@@ -20,6 +17,13 @@
 
 using namespace Renderer;
 using namespace PAL::FileSystem;
+
+std::unique_ptr<IRenderer> RendererLocator::mService;
+
+std::unique_ptr<IRenderer> Renderer::CreateRenderer()
+{
+    return std::make_unique<VulkanRenderer>();
+}
 
 namespace
 {
@@ -157,15 +161,17 @@ void VulkanRenderer::Initialize()
     
     mDevice->CreateCommandPool(&poolInfo, nullptr, &mCommandPool);
     
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+//    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+//    
+//    uniformBuffers.resize(2);
+//    uniformBuffersMemory.resize(2);
+//    
+//    for (size_t i = 0; i < 2; ++i)
+//    {
+//        CreateBufferInternal(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE, uniformBuffers[i], uniformBuffersMemory[i]);
+//    }
     
-    uniformBuffers.resize(2);
-    uniformBuffersMemory.resize(2);
-    
-    for (size_t i = 0; i < 2; ++i)
-    {
-        CreateBufferInternal(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE, uniformBuffers[i], uniformBuffersMemory[i]);
-    }
+    mImgFormat = VK_FORMAT_B8G8R8A8_UNORM;
 }
 
 void Renderer::VulkanRenderer::CreateCommandBuffers(const Pipeline& pipeline, Object3D& object)
@@ -201,19 +207,25 @@ void Renderer::VulkanRenderer::CreateCommandBuffers(const Pipeline& pipeline, Ob
         
         const auto& indexStream = object.mVertexBuffer.GetIndexDataStream();
         
-        const auto positionBuffer = (VulkanBuffer*)object.mVertexBuffer.GetPositionDataStream().GetDeviceResourcePtr();
-        const auto colorBuffer = (VulkanBuffer*)object.mVertexBuffer.GetColorDataStream().GetDeviceResourcePtr();
-        const auto vulkanIndexBuffer = (VulkanBuffer*)object.mVertexBuffer.GetIndexDataStream().GetDeviceResourcePtr();
+        const auto& positionBuffer = object.mVertexBuffer.GetPositionDataStream().GetDeviceResourcePtr();
+        const auto& colorBuffer = object.mVertexBuffer.GetColorDataStream().GetDeviceResourcePtr();
+        const auto& indexBuffer = object.mVertexBuffer.GetIndexDataStream().GetDeviceResourcePtr();
+        
+        BufferObjectVisitor positionVisitor, colorVisitor, indexVisitor;
+        positionBuffer.Accept(positionVisitor);
+        colorBuffer.Accept(colorVisitor);
+        indexBuffer.Accept(indexVisitor);
         
         VkDeviceSize offset[] = { 0, 0 };
-        VkBuffer buffers[] = { positionBuffer->handle, colorBuffer->handle };
+        VkBuffer buffers[]{ positionVisitor.buffer, colorVisitor.buffer };
         
-        VulkanPipeline* vulkanPipeline = (VulkanPipeline*)pipeline.pipelineResource.get();
+        PipelineObjectVisitor visitor;
+        pipeline.mDeviceObject.Accept(visitor);
         
         mDevice->BeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        mDevice->BindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->pipeline);
+        mDevice->BindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, visitor.pipeline);
         mDevice->CmdBindVertexBuffer(mCommandBuffers[i], 0, object.mVertexBuffer.GetDataStreamCount(), buffers, offset);
-        mDevice->CmdBindIndexBuffer(mCommandBuffers[i], vulkanIndexBuffer->handle, 0, (indexStream.GetStride() == sizeof(uint16_t)) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+        mDevice->CmdBindIndexBuffer(mCommandBuffers[i], indexVisitor.buffer, 0, (indexStream.GetStride() == sizeof(uint16_t)) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
         mDevice->CmdDrawIndexed(mCommandBuffers[i], indexStream.GetElementCount(), 1, 0, 0, 0);
         mDevice->EndRenderPass(mCommandBuffers[i]);
         mDevice->EndCommandBuffer(mCommandBuffers[i]);
@@ -224,12 +236,7 @@ void Renderer::VulkanRenderer::Deinitialize()
 {
 }
 
-void Renderer::VulkanRenderer::SetImageFormat(ImgFormat format)
-{
-    mImgFormat = VK_FORMAT_B8G8R8A8_UNORM;
-}
-
-std::shared_ptr<IDevice> VulkanRenderer::CreateDevice(DeviceType type)
+void VulkanRenderer::CreateDevice(DeviceType type)
 {
 	const auto& vulkanAPI = PAL::RenderAPI::VulkanAPIServiceLocator::Service();
 
@@ -268,7 +275,6 @@ std::shared_ptr<IDevice> VulkanRenderer::CreateDevice(DeviceType type)
 	deviceData.logicalDevice = vulkanAPI.CreateDevice(physicalDevice, deviceCreateInfo);
 
 	mDevice = std::make_shared<PAL::RenderAPI::VulkanDevice>(deviceData);
-	return nullptr;
 }
 
 void VulkanRenderer::CreateSwapChain(std::unique_ptr<SwapChainResource>& swapChain, void* nativeHandle, uint32_t width, uint32_t height)
@@ -305,7 +311,7 @@ void VulkanRenderer::CreateShader(std::unique_ptr<RendererResource>& shader, con
     mDevice->CreateShaderModule(&createInfo, nullptr, &vulkanShaderResource->vulkanShader);
 }
 
-void VulkanRenderer::CreatePipeline(std::unique_ptr<RendererResource>& pipeline, const std::string& vs, const std::string& fs) const
+void VulkanRenderer::CreatePipeline(DeviceObject& object, const std::string& vs, const std::string& fs) const
 {
     File vertexShaderFile(vs), framentShaderFile(fs);
     vertexShaderFile.Open(EFileAccessMode::Read);
@@ -448,13 +454,15 @@ void VulkanRenderer::CreatePipeline(std::unique_ptr<RendererResource>& pipeline,
     // Create pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.pSetLayouts = nullptr;
+//    pipelineLayoutInfo.setLayoutCount = 1;
+//    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
     
-    auto vulkanPipeline = std::make_unique<VulkanPipeline>();
-    mDevice->CreatePipelineLayout(&pipelineLayoutInfo, nullptr, &vulkanPipeline->pipelineLayout);
+    VkPipelineLayout layout{ VK_NULL_HANDLE };
+    mDevice->CreatePipelineLayout(&pipelineLayoutInfo, nullptr, &layout);
     
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -466,14 +474,15 @@ void VulkanRenderer::CreatePipeline(std::unique_ptr<RendererResource>& pipeline,
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = vulkanPipeline->pipelineLayout;
+    pipelineInfo.layout = layout;
     pipelineInfo.renderPass = mRenderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     
-    mDevice->CreateGraphicsPipeline(VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vulkanPipeline->pipeline);
+    VkPipeline pipeline{ VK_NULL_HANDLE };
+    mDevice->CreateGraphicsPipeline(VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline);
     
-    pipeline = std::move(vulkanPipeline);
+    object = PipelineDeviceObject(pipeline, layout);
 }
 
 const FrameSyncData VulkanRenderer::GetFrameSyncData() const
@@ -561,45 +570,47 @@ void VulkanRenderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevice
     mDevice->FreeCommandBuffers(mCommandPool, 1, &commandBuffer);
 }
 
-void VulkanRenderer::CreateBuffer(const BufferDesc& desc, std::unique_ptr<RendererResource>& buffer) const
+void VulkanRenderer::CreateBuffer(const BufferDesc& desc, DeviceObject& bufferObject) const
 {
-    VulkanBuffer vulkanBuffer;
+    VkBuffer buffer{ VK_NULL_HANDLE };
+    VkDeviceMemory memory{ VK_NULL_HANDLE };
     
     if(desc.memoryUsage & MemoryType::DeviceLocal)
     {
-        VulkanBuffer stagingBuffer;
+        VkBuffer stagingBuffer{ VK_NULL_HANDLE };
+        VkDeviceMemory stagingMemory{ VK_NULL_HANDLE };
         
         constexpr auto stagingBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         constexpr auto stagingMemoryType = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         
         const auto vulkanSharingMode = ToVulkanSharingMode(desc.sharingMode);
         
-        CreateBufferInternal(desc.bufferSize, stagingBufferUsage, stagingMemoryType, vulkanSharingMode, stagingBuffer.handle, stagingBuffer.memory);
+        CreateBufferInternal(desc.bufferSize, stagingBufferUsage, stagingMemoryType, vulkanSharingMode, stagingBuffer, stagingMemory);
         
         void* data{ nullptr };
-        mDevice->MapMemory(stagingBuffer.memory, 0, desc.bufferSize, 0, &data);
+        mDevice->MapMemory(stagingMemory, 0, desc.bufferSize, 0, &data);
         memcpy(data, desc.data, (size_t)desc.bufferSize);
-        mDevice->UnmapMemory(stagingBuffer.memory);
+        mDevice->UnmapMemory(stagingMemory);
         
         const auto vulkanMemoryType = ToVulkanMemoryProperty(desc.memoryUsage);
         const auto vulkanBufferUsage = ToVulkanBufferUsage(desc.usage);
         
-        CreateBufferInternal(desc.bufferSize, vulkanBufferUsage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, vulkanMemoryType, vulkanSharingMode, vulkanBuffer.handle, vulkanBuffer.memory);
+        CreateBufferInternal(desc.bufferSize, vulkanBufferUsage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, vulkanMemoryType, vulkanSharingMode, buffer, memory);
         
-        CopyBuffer(stagingBuffer.handle, vulkanBuffer.handle, desc.bufferSize);
+        CopyBuffer(stagingBuffer, buffer, desc.bufferSize);
         
-        mDevice->DestroyBuffer(stagingBuffer.handle, nullptr);
-        mDevice->FreeMemory(stagingBuffer.memory, nullptr);
+        mDevice->DestroyBuffer(stagingBuffer, nullptr);
+        mDevice->FreeMemory(stagingMemory, nullptr);
     }
     else if(desc.memoryUsage & MemoryType::HostVisible)
     {
         void* data{ nullptr };
-        mDevice->MapMemory(vulkanBuffer.memory, 0, desc.bufferSize, 0, &data);
+        mDevice->MapMemory(memory, 0, desc.bufferSize, 0, &data);
         memcpy(data, desc.data, (size_t)desc.bufferSize);
-        mDevice->UnmapMemory(vulkanBuffer.memory);
+        mDevice->UnmapMemory(memory);
     }
     
-    buffer = std::make_unique<VulkanBuffer>(vulkanBuffer);
+    bufferObject = BufferDeviceObject(buffer, memory);
 }
 
 void VulkanRenderer::CreateDescriptorSetLayout()
@@ -621,19 +632,19 @@ void VulkanRenderer::CreateDescriptorSetLayout()
 
 void VulkanRenderer::UpdateUniformBuffer(uint32_t currentImage)
 {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    
-    UniformBufferObject ubo = {};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
-    ubo.proj[1][1] *= -1;
-    
-    void* data;
-    vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
-    memcpy(data, &ubo, sizeof(ubo));
-    vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
+//    static auto startTime = std::chrono::high_resolution_clock::now();
+//    
+//    auto currentTime = std::chrono::high_resolution_clock::now();
+//    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+//    
+//    UniformBufferObject ubo = {};
+//    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+//    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+//    ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
+//    ubo.proj[1][1] *= -1;
+//    
+//    void* data;
+//    vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+//    memcpy(data, &ubo, sizeof(ubo));
+//    vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
 }

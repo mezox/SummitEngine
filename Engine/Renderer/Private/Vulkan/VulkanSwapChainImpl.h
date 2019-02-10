@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Engine/Renderer.h>
-#include <Engine/SwapChain.h>
+#include <Renderer/Renderer.h>
+#include <Renderer/SwapChain.h>
 #include <PAL/RenderAPI/VulkanAPI.h>
 
 #include <Event/EventHandler.h>
-#include <Engine/WindowEvent.h>
+//#include <Engine/WindowEvent.h>
 
 #include <vulkan/vulkan.h>
 #include <vector>
@@ -41,7 +41,7 @@ namespace Renderer
         void DestroyFramebuffers();
         
     private:
-        void OnWindowResize(const Application::WindowResizeEvent& event);
+        //void OnWindowResize(const Application::WindowResizeEvent& event);
 
     private:
         std::shared_ptr<PAL::RenderAPI::VulkanDevice> mDevice;
@@ -64,6 +64,6 @@ namespace Renderer
 
         uint32_t mImageIndex{ 0 };
         
-        Event::EventHandlerFunc<SwapChainVK, Application::WindowResizeEvent> mWindowResizeHandler;
+        //Event::EventHandlerFunc<SwapChainVK, Application::WindowResizeEvent> mWindowResizeHandler;
     };
 }

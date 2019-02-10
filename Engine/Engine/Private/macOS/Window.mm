@@ -1,8 +1,7 @@
 #include <Engine/Window.h>
-#include <Engine/Renderer.h>
-#include <Engine/SwapChain.h>
+#include <Renderer/Renderer.h>
+#include <Renderer/SwapChain.h>
 #include <Event/EventService.h>
-#include "VulkanSwapChainImpl.h"
 
 #import <Cocoa/Cocoa.h>
 #import "SummitWindow.h"
@@ -64,7 +63,7 @@ namespace Application
     
     void Window::Update()
     {
-        ((Renderer::SwapChainVK*)mSwapChain.mSwapChainResource.get())->SwapBuffers();
+        mSwapChain.mSwapChainResource->SwapBuffers();
     }
     
     void Window::SetTitle(const std::string& title)
