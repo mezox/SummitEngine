@@ -15,7 +15,7 @@
 #include <Engine/Engine.h>
 #include <PAL/FileSystem/File.h>
 #include <Engine/Window.h>
-#include <Engine/Renderer.h>
+#include <Renderer/Renderer.h>
 
 
 #ifdef LOG_MODULE_ID
@@ -28,8 +28,6 @@
 #endif
 
 #define LOG_MODULE_ID LOG_MODULE_4BYTE(' ','A','P','P')
-
-#include <Engine/VertexBuffer.h>
 
 using namespace Renderer;
 
@@ -56,9 +54,13 @@ using namespace Renderer;
     Engine::EngineServiceLocator::Service()->RegisterWindow(window);
     
     Object3D triangle;
-    auto& positionData = triangle.mVertexBuffer.GetPositionDataStream().GetData();
-    auto& colorData = triangle.mVertexBuffer.GetColorDataStream().GetData();
-    auto& indexData = triangle.mVertexBuffer.GetIndexDataStream().GetData();
+    auto& positionStream = triangle.mVertexBuffer.GetPositionDataStream();
+    auto& colorStream = triangle.mVertexBuffer.GetColorDataStream();
+    auto& indexStream = triangle.mVertexBuffer.GetIndexDataStream();
+    
+    auto& positionData = positionStream.GetData();
+    auto& colorData = colorStream.GetData();
+    auto& indexData = indexStream.GetData();
     
     positionData.push_back({ -0.5f, -0.5f });
     positionData.push_back({ 0.5f, -0.5f });
@@ -72,34 +74,11 @@ using namespace Renderer;
     
     indexData = { 0, 1, 2, 2, 3, 0 };
     
-    auto& renderer = Engine::EngineServiceLocator::Service()->GetRenderer();
+    positionStream.Lock(CommitCommand::Commit);
+    colorStream.Lock(CommitCommand::Commit);
+    indexStream.Lock(CommitCommand::Commit);
     
-    BufferDesc descriptorPosition;
-    descriptorPosition.usage = BufferUsage::VertexBuffer;
-    descriptorPosition.sharingMode = SharingMode::Exclusive;
-    descriptorPosition.memoryUsage = MemoryType::DeviceLocal;
-    descriptorPosition.bufferSize = positionData.size() * sizeof(positionData[0]);
-    descriptorPosition.data = positionData.data();
-    
-    renderer.CreateBuffer(descriptorPosition, triangle.mVertexBuffer.GetPositionDataStream().GetDeviceResource());
-    
-    BufferDesc descriptorColor;
-    descriptorColor.usage = BufferUsage::VertexBuffer;
-    descriptorColor.sharingMode = SharingMode::Exclusive;
-    descriptorColor.memoryUsage = MemoryType::DeviceLocal;
-    descriptorColor.bufferSize = colorData.size() * sizeof(colorData[0]);
-    descriptorColor.data = colorData.data();
-    
-    renderer.CreateBuffer(descriptorColor, triangle.mVertexBuffer.GetColorDataStream().GetDeviceResource());
-    
-    BufferDesc descriptorIndexBuffer;
-    descriptorIndexBuffer.usage = BufferUsage::IndexBuffer;
-    descriptorIndexBuffer.sharingMode = SharingMode::Exclusive;
-    descriptorIndexBuffer.memoryUsage = MemoryType::DeviceLocal;
-    descriptorIndexBuffer.bufferSize = indexData.size() * sizeof(indexData[0]);
-    descriptorIndexBuffer.data = indexData.data();
-    
-    renderer.CreateBuffer(descriptorIndexBuffer, triangle.mVertexBuffer.GetIndexDataStream().GetDeviceResource());
+    auto& renderer = Renderer::RendererLocator::GetRenderer();
     
     Pipeline pipeline;
     pipeline.vertexShaderFile = "/Users/tomaskubovcik/Dev/SummitEngine/vert.spv";
