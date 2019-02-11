@@ -23,12 +23,15 @@ set(DEPENDENCIES
 
 # platform agnostic source files
 set(PRIVATE_SOURCES
+	Private/Matrix4.cpp
 )
 
 set(PUBLIC_SOURCES
+	Public/Math/Math.h
     Public/Math/Vector2.h
     Public/Math/Vector3.h
     Public/Math/Vector4.h
+    Public/Math/Matrix4.h
 )
 
 #set(PRECOMPILED_SOURCE Private/pch.cpp)
@@ -36,12 +39,18 @@ set(PUBLIC_SOURCES
 
 configure_platform_file(${PROJECT_NAME} Public/Math  ${PUBLIC_SOURCES})
 
-add_library(${PROJECT_NAME} INTERFACE
-#	${PUBLIC_SOURCES}
-#	${PRIVATE_SOURCES}
+add_library(${PROJECT_NAME}
+	${PUBLIC_SOURCES}
+	${PRIVATE_SOURCES}
 #	${PRECOMPILED_SOURCE}
 #	${PRECOMPILED_HEADER}
 )
 
 #target_set_precompiled_header(${PROJECT_NAME} ${PRECOMPILED_HEADER} ${PRECOMPILED_SOURCE})
 target_include_directories(${PROJECT_NAME} INTERFACE "Public")
+
+ide_source_files_group( ${PUBLIC_SOURCES}
+                        ${PRIVATE_SOURCES}
+                        #${PRECOMPILED_SOURCE}
+                        #${PRECOMPILED_HEADER}
+)

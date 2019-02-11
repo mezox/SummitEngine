@@ -23,4 +23,4 @@ public:
     T w{ 0 };
 };
 
-using Vector4<float> = Vector4f;
+using Vector4f = Vector4<float>;
