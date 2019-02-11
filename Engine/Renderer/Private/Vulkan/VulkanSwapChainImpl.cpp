@@ -165,6 +165,9 @@ void SwapChainVK::SwapBuffers()
     mDevice->WaitForFences(1, &frameSync.frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
     
     const auto status = mDevice->AcquireNextImageKHR(mHandle, std::numeric_limits<uint64_t>::max(), frameSync.imageAvailableSemaphore, VK_NULL_HANDLE, &mImageIndex);
+    
+    renderer.UpdateCamera(mImageIndex);
+    
     if(status != VK_SUCCESS)
     {
         LOG(Debug) << "Swap chain window resize";

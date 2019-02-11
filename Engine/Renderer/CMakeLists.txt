@@ -39,6 +39,7 @@ set(PRIVATE_SOURCES
 	Private/Vulkan/VulkanRendererImpl.cpp
 	Private/Vulkan/VulkanSwapChainImpl.h
 	Private/Vulkan/VulkanSwapChainImpl.cpp
+	Private/Vulkan/VulkanDeviceObjects.h
 )
 
 #set(PRECOMPILED_SOURCE Private/pch.cpp)
