@@ -288,6 +288,11 @@ namespace PAL::RenderAPI
         vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
     }
     
+    void VulkanDevice::CmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) const
+    {
+        vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
+    }
+    
     VkResult VulkanDevice::CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const
     {
         const auto result = vkCreateDescriptorSetLayout(mLogicalDevice, pCreateInfo, pAllocator, pSetLayout);
@@ -310,6 +315,25 @@ namespace PAL::RenderAPI
     void VulkanDevice::DestroyDescriptorPool(VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator) const
     {
         vkDestroyDescriptorPool(mLogicalDevice, descriptorPool, pAllocator);
+    }
+    
+    VkResult VulkanDevice::AllocateDescriptorSets(const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) const
+    {
+        const auto result = vkAllocateDescriptorSets(mLogicalDevice, pAllocateInfo, pDescriptorSets);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::UpdateDescriptorSets(uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) const
+    {
+        vkUpdateDescriptorSets(mLogicalDevice, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
+    }
+    
+    VkResult VulkanDevice::FreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets) const
+    {
+        const auto result = vkFreeDescriptorSets(mLogicalDevice, descriptorPool, descriptorSetCount, pDescriptorSets);
+        VK_CHECK_RESULT(result);
+        return result;
     }
 
 	void VulkanDevice::LoadFunctions(PFN_vkGetDeviceProcAddr loadFunc)
@@ -336,11 +360,15 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdDraw);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindIndexBuffer);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdDrawIndexed);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindDescriptorSets);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateDescriptorSetLayout);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyDescriptorSetLayout);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateDescriptorPool);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyDescriptorPool);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkAllocateDescriptorSets);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkUpdateDescriptorSets);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkFreeDescriptorSets);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateFramebuffer);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyFramebuffer);

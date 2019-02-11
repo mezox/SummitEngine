@@ -97,12 +97,16 @@ namespace PAL::RenderAPI
         void CmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const;
         void CmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const;
         void CmdDrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const;
+        void CmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) const;
         
         // Descriptors        
         VkResult CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const;
         void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator) const;
         VkResult CreateDescriptorPool(const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool) const;
         void DestroyDescriptorPool(VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator) const;
+        VkResult AllocateDescriptorSets(const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) const;
+        void UpdateDescriptorSets(uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) const;
+        VkResult FreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets) const;
 
 	private:
 		void LoadFunctions(PFN_vkGetDeviceProcAddr loadFunc);
@@ -145,6 +149,7 @@ namespace PAL::RenderAPI
         PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers{ nullptr };
         PFN_vkCmdCopyBuffer vkCmdCopyBuffer{ nullptr };
         
+        PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets{ nullptr };
         PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer{ nullptr };
         PFN_vkCmdDrawIndexed vkCmdDrawIndexed{ nullptr };
         
@@ -161,6 +166,9 @@ namespace PAL::RenderAPI
         PFN_vkDestroyDescriptorSetLayout vkDestroyDescriptorSetLayout{ nullptr };
         PFN_vkCreateDescriptorPool vkCreateDescriptorPool{ nullptr };
         PFN_vkDestroyDescriptorPool vkDestroyDescriptorPool{ nullptr };
+        PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets{ nullptr };
+        PFN_vkUpdateDescriptorSets vkUpdateDescriptorSets{ nullptr };
+        PFN_vkFreeDescriptorSets vkFreeDescriptorSets{ nullptr };
         
         // Buffers
         PFN_vkCreateBuffer vkCreateBuffer{ nullptr };
