@@ -44,6 +44,8 @@ set(PUBLIC_SOURCES
 )
 
 set(PRIVATE_SOURCES
+    Private/DeviceObjectImpl.h
+    Private/DeviceObjectImpl.cpp
     Private/VertexBuffer.cpp
     Private/Image.cpp
     Private/Vulkan/VulkanCommandBuffer.h

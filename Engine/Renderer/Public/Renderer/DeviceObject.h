@@ -37,29 +37,16 @@ namespace Renderer
         virtual void Visit(const Vulkan::DescriptorSetDeviceObject& object) = 0;
     };
     
+    class IDeviceObjectImpl
+    {
+    public:
+        virtual ~IDeviceObjectImpl() = default;
+        virtual IDeviceObjectImpl* Move(void* address) = 0;
+        virtual void Accept(IDeviceObjectVisitor& visitor) const = 0;
+    };
+    
     class RENDERER_API DeviceObject
     {
-        class IDeviceObjectImpl
-        {
-        public:
-            virtual ~IDeviceObjectImpl() = default;
-            virtual IDeviceObjectImpl* Move(void* address) = 0;
-            virtual void Accept(IDeviceObjectVisitor& visitor) const = 0;
-        };
-        
-        class EmptyDeviceObject final : public IDeviceObjectImpl
-        {
-            IDeviceObjectImpl* Move(void* addr) override
-            {
-                return new (addr) EmptyDeviceObject(std::move(*this));
-            }
-            
-            void Accept(IDeviceObjectVisitor& visitor) const override
-            {
-                throw std::invalid_argument("Bad function call");
-            }
-        };
-        
         template<typename T>
         class DeviceObjectImpl final : public IDeviceObjectImpl
         {
@@ -83,33 +70,18 @@ namespace Renderer
         };
     
     public:
-        DeviceObject() : mImpl(new (&mStorage) EmptyDeviceObject) {}
-        DeviceObject(DeviceObject&& other) noexcept : mImpl(other.mImpl->Move(&mStorage)) {}
+        DeviceObject();
+        DeviceObject(DeviceObject&& other) noexcept;
+        ~DeviceObject();
         
         DeviceObject(const DeviceObject& other) = delete;
-        ~DeviceObject() { mImpl->~IDeviceObjectImpl(); }
-        
         DeviceObject& operator=(const DeviceObject& other) = delete;
-        DeviceObject& operator=(DeviceObject&& other) noexcept
-        {
-            mImpl->~IDeviceObjectImpl();
-            mImpl = other.mImpl->Move(&mStorage);
-            return *this;
-        }
+        DeviceObject& operator=(DeviceObject&& other) noexcept;
         
         template <typename T, typename = std::enable_if_t<!std::is_same<std::decay_t<T>, DeviceObject>::value>>
-        DeviceObject& operator=(T&& impl)
-        {
-            static_assert(sizeof(T) <= c_max_id_sizeof, "Object too big");
-            mImpl->~IDeviceObjectImpl();
-            mImpl = new (&mStorage) DeviceObjectImpl<std::decay_t<T>>(std::forward<T>(impl));
-            return *this;
-        }
+        DeviceObject& operator=(T&& impl) noexcept;
         
-        void Accept(IDeviceObjectVisitor& visitor) const
-        {
-            mImpl->Accept(visitor);
-        }
+        void Accept(IDeviceObjectVisitor& visitor) const;
         
     private:
         enum
@@ -122,6 +94,15 @@ namespace Renderer
         std::aligned_storage<c_max_id_sizeof>::type mStorage;
         IDeviceObjectImpl* mImpl{ nullptr };
     };
+    
+    template <typename T, typename F>
+    DeviceObject& DeviceObject::operator=(T&& impl) noexcept
+    {
+        static_assert(sizeof(T) <= c_max_id_sizeof, "Object too big");
+        mImpl->~IDeviceObjectImpl();
+        mImpl = new (&mStorage) DeviceObjectImpl<std::decay_t<T>>(std::forward<T>(impl));
+        return *this;
+    }
     
     template<typename T>
     DeviceObject Basify(T&& impl)
