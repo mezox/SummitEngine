@@ -12,6 +12,7 @@ auto TypeLinkerTempl<Renderer::BufferUsage, VkBufferUsageFlagBits>::operator()(c
     {
         case Renderer::BufferUsage::Undefined: throw std::runtime_error("Undefined buffer usage");
         case Renderer::BufferUsage::VertexBuffer: return to_t{ VK_BUFFER_USAGE_VERTEX_BUFFER_BIT };
+        case Renderer::BufferUsage::UniformBuffer: return to_t{ VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
         case Renderer::BufferUsage::IndexBuffer: return to_t{ VK_BUFFER_USAGE_INDEX_BUFFER_BIT };
     }
 }

@@ -2,6 +2,7 @@
 
 #include <Engine/Application.h>
 #include <Renderer/Renderer.h>
+#include <Renderer/Resources/Buffer.h>
 #include <Math/Matrix4.h>
 
 namespace Summit
@@ -41,5 +42,7 @@ namespace Demo
         Matrix4 mModel;
         Matrix4 mView;
         Matrix4 mProjection;
+        
+        Renderer::Buffer mUniformBuffer;
     };
 }

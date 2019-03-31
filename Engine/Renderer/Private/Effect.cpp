@@ -1,4 +1,5 @@
 #include <Renderer/Effect.h>
+#include <Renderer/Resources/Buffer.h>
 #include <Logging/LoggingService.h>
 
 #include <exception>
@@ -26,6 +27,13 @@ void Effect::AddUniform(const UniformType type, const ModuleStage stage, const u
         mUniformBindings.resize(binding + 1);
     
     mUniformBindings[binding].push_back({ type, stage, count });
+}
+
+void Effect::AddUniformBuffer(ModuleStage stage, uint32_t binding, const Buffer& buffer)
+{
+    AddUniform(UniformType::Buffer, stage, binding, 1);
+    
+    mUniformBuffers.push_back(&buffer);
 }
 
 uint8_t Effect::GetBindingCount() const

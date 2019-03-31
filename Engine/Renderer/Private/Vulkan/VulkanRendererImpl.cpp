@@ -1,6 +1,7 @@
 #include "VulkanRendererImpl.h"
 
 #include <Renderer/VertexBuffer.h>
+#include <Renderer/Resources/Buffer.h>
 #include <PAL/RenderAPI/VulkanAPI.h>
 #include <PAL/RenderAPI/VulkanDevice.h>
 #include <PAL/FileSystem/File.h>
@@ -114,20 +115,6 @@ void VulkanRenderer::Initialize()
     
     // TODO: Application specific
     mTexture = std::make_unique<Image>(Image::CreateFromFile("/Users/tomaskubovcik/Dev/SummitEngine/texture.jpg"));
-    
-    
-    VkDeviceSize bufferSize = 3 * sizeof(Matrix4);
-    
-    uniformBuffers.resize(2);
-    uniformBuffersMemory.resize(2);
-    
-    for (size_t i = 0; i < 2; ++i)
-    {
-        const auto bufferDeviceObject = CreateBufferImpl(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE);
-        
-        uniformBuffers[i] = bufferDeviceObject.buffer;
-        uniformBuffersMemory[i] = bufferDeviceObject.memory;
-    }
     
     mImgFormat = VK_FORMAT_B8G8R8A8_UNORM;
 }
@@ -551,7 +538,7 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
         poolSizes.push_back(std::move(size));
     }
     
-    // Pre-allocate this for whole renderer?
+    // Pre-allocate this for whole renderer/ per render thread?
     VkDescriptorPoolCreateInfo descPoolInfo{};
     descPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -573,12 +560,19 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     descriptorSets.resize(SWAP_CHAIN_IMAGE_COUNT);           // Depends on swap chain images cnt
     mDevice->AllocateDescriptorSets(&allocInfo, descriptorSets.data());
     
+    BufferObjectVisitor bufferVisitor;
+    
     for (size_t i = 0; i < SWAP_CHAIN_IMAGE_COUNT; i++)          // Depends on swap chain images cnt
     {
+        // TODO: Handle this generically
+        const Buffer& mvpBuf = *effect.mUniformBuffers[0];
+        
+        mvpBuf.deviceObject.Accept(bufferVisitor);
+        
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffers[i];
+        bufferInfo.buffer = bufferVisitor.buffer;
         bufferInfo.offset = 0;
-        bufferInfo.range = 3 * sizeof(Matrix4);
+        bufferInfo.range = mvpBuf.dataSize;
         
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -612,7 +606,6 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     {
         effect.mDescriptorSets.push_back(Basify(DescriptorSetDeviceObject(descriptorSets[i])));
     }
-    
     
     // Vertex input
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -832,6 +825,9 @@ void VulkanRenderer::CreateBuffer(const BufferDesc& desc, DeviceObject& bufferOb
 {
     BufferDeviceObject bdo;
     
+    const auto vulkanMemoryType = ConvertType(desc.memoryUsage);
+    const auto vulkanBufferUsage = ConvertType(desc.usage);
+    
     if(desc.memoryUsage & MemoryType::DeviceLocal)
     {
         constexpr auto stagingBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -844,9 +840,6 @@ void VulkanRenderer::CreateBuffer(const BufferDesc& desc, DeviceObject& bufferOb
         memcpy(data, desc.data, (size_t)desc.bufferSize);
         mDevice->UnmapMemory(stagingBuffer.memory);
         
-        const auto vulkanMemoryType = ConvertType(desc.memoryUsage);
-        const auto vulkanBufferUsage = ConvertType(desc.usage);
-        
         bdo = CreateBufferImpl(desc.bufferSize, vulkanBufferUsage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, vulkanMemoryType, VK_SHARING_MODE_EXCLUSIVE);
         
         CopyBuffer(stagingBuffer.buffer, bdo.buffer, desc.bufferSize);
@@ -856,10 +849,7 @@ void VulkanRenderer::CreateBuffer(const BufferDesc& desc, DeviceObject& bufferOb
     }
     else if(desc.memoryUsage & MemoryType::HostVisible)
     {
-        void* data{ nullptr };
-        mDevice->MapMemory(bdo.memory, 0, desc.bufferSize, 0, &data);
-        memcpy(data, desc.data, (size_t)desc.bufferSize);
-        mDevice->UnmapMemory(bdo.memory);
+        bdo = CreateBufferImpl(desc.bufferSize, vulkanBufferUsage, vulkanMemoryType, VK_SHARING_MODE_EXCLUSIVE);
     }
     
     bufferObject = bdo;
@@ -971,12 +961,15 @@ void VulkanRenderer::CreateTexture(const ImageDesc& desc, const SamplerDesc& sam
     }
 }
 
-void VulkanRenderer::MapMemory(uint32_t size, void* data)
+void VulkanRenderer::MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data)
 {
+    MemoryMapVisitor visitor;
+    deviceObject.Accept(visitor);
+    
     void* pdata{ nullptr };
-    mDevice->MapMemory(uniformBuffersMemory[mCurrentFrameId], 0, size, 0, &pdata);
+    mDevice->MapMemory(visitor.memory, 0, size, 0, &pdata);
     memcpy(pdata, data, size);
-    mDevice->UnmapMemory(uniformBuffersMemory[mCurrentFrameId]);
+    mDevice->UnmapMemory(visitor.memory);
 }
 
 void VulkanRenderer::CreateRenderPass()

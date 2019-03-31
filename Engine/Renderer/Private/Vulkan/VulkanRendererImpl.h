@@ -55,7 +55,7 @@ namespace Renderer
         void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) override;
         void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) override;
         
-        void MapMemory(uint32_t size, void* data) override;
+        void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) override;
         
         void CreateRenderPass();
         
@@ -89,9 +89,6 @@ namespace Renderer
         std::vector<VkCommandBuffer> mCommandBuffers;
         std::vector<VkFramebuffer> mFramebuffers;
         VkDescriptorPool mDescriptorPool;
-        
-        std::vector<VkBuffer> uniformBuffers;
-        std::vector<VkDeviceMemory> uniformBuffersMemory;
         
         VkFormat mImgFormat{ VK_FORMAT_B8G8R8A8_UNORM };   //TODO: Initialize
         size_t mCurrentFrameId{ 0 };

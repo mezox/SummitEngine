@@ -41,6 +41,7 @@ set(PUBLIC_SOURCES
     # resources
     Public/Renderer/Resources/DeviceResource.h
     Public/Renderer/Resources/Framebuffer.h
+    Public/Renderer/Resources/Buffer.h
 )
 
 set(PRIVATE_SOURCES

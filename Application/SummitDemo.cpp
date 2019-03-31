@@ -82,6 +82,15 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     
     auto& renderer = Renderer::RendererLocator::GetRenderer();
     
+    mUniformBuffer.offset = 0;
+    mUniformBuffer.dataSize = 3 * sizeof(Matrix4);
+    
+    BufferDesc mvpUboDesc;
+    mvpUboDesc.bufferSize = mUniformBuffer.dataSize;
+    mvpUboDesc.usage = BufferUsage::UniformBuffer;
+    mvpUboDesc.memoryUsage = MemoryType(MemoryType::HostVisible | MemoryType::HostCoherent);
+    renderer.CreateBuffer(mvpUboDesc, mUniformBuffer.deviceObject);
+    
     // Setup stages
     pipeline.effect.AddModule(ModuleStage::Vertex, "/Users/tomaskubovcik/Dev/SummitEngine/vert.spv");
     pipeline.effect.AddModule(ModuleStage::Fragment, "/Users/tomaskubovcik/Dev/SummitEngine/frag.spv");
@@ -92,7 +101,7 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     pipeline.effect.AddAttribute(Format::R32G32F, 2);
     
     // Setup uniforms
-    pipeline.effect.AddUniform(UniformType::Buffer, ModuleStage::Vertex, 0, 1);
+    pipeline.effect.AddUniformBuffer(ModuleStage::Vertex, 0, mUniformBuffer);
     pipeline.effect.AddUniform(UniformType::Sampler, ModuleStage::Fragment, 1, 1);
     
     pipeline.Create();
@@ -148,7 +157,7 @@ void SummitDemo::UpdateCamera()
     mvp.projection = Matrix4::MakePerspective(Math::DegreesToRadians(60.0f), 1280/720.f, 0.1f, 10.0f); //Matrix4::MakeOrtho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 
     auto& renderer = Renderer::RendererLocator::GetRenderer();
-    renderer.MapMemory(3 * sizeof(Matrix4), &mvp);
+    renderer.MapMemory(mUniformBuffer.deviceObject, mUniformBuffer.dataSize, &mvp);
 }
 
 void SummitDemo::OnEarlyUpdate(const FrameData& data)

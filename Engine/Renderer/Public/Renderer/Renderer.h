@@ -62,7 +62,7 @@ namespace Renderer
         virtual void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) = 0;
         virtual void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) = 0;
         
-        virtual void MapMemory(uint32_t size, void* data) = 0;
+        virtual void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) = 0;
 	};
     
     RENDERER_API std::unique_ptr<IRenderer> CreateRenderer();

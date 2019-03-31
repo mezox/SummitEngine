@@ -256,4 +256,21 @@ namespace Renderer
     public:
         VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
     };
+    
+    class MemoryMapVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const BufferDeviceObject& object) override
+        {
+            memory = object.memory;
+        }
+        
+        void Visit(const TextureDeviceObject& object) override
+        {
+            memory = object.memory;
+        }
+        
+    public:
+        VkDeviceMemory memory{ VK_NULL_HANDLE };
+    };
 }

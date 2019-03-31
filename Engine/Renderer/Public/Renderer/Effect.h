@@ -11,6 +11,8 @@
 
 namespace Renderer
 {
+    class Buffer;
+    
     enum class ModuleStage
     {
         Undefined,
@@ -61,6 +63,8 @@ namespace Renderer
         
         void AddUniform(UniformType f, ModuleStage type, uint32_t binding, uint32_t count);
         
+        void AddUniformBuffer(ModuleStage type, uint32_t binding, const Buffer& buffer);
+        
         uint8_t GetBindingCount() const;
         const std::vector<Format>& GetBindingDescriptor(uint8_t binding) const;
         const std::vector<ModuleDescriptor>& GetModuleDescriptors() const;
@@ -73,5 +77,7 @@ namespace Renderer
         std::vector<DeviceObject> mModules;
         std::vector<DeviceObject> mDescriptorSetLayouts;
         std::vector<DeviceObject> mDescriptorSets;
+        
+        std::vector<const Buffer*> mUniformBuffers;
     };
 }
