@@ -23,6 +23,12 @@ namespace PAL::RenderAPI
 		std::vector<VkExtensionProperties> deviceExtensions;
 		PFN_vkGetDeviceProcAddr deviceProcAddrFunc{ nullptr };
 	};
+    
+    enum class DeviceFeature
+    {
+        None = 0x00000000,
+        AnisotropicFiltering = 0x00000001
+    };
 
 	class RENDERAPI_API VulkanDevice
 	{
@@ -32,6 +38,8 @@ namespace PAL::RenderAPI
         
         const VkPhysicalDevice& GetPhysicalDevice() const { return mPhysicalDevice; }
         const VkDevice& GetDevice() const { return mLogicalDevice; }
+        
+        bool IsFeatureSupported(DeviceFeature f) const;
 
 		void CreateSwapchainKHR(const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const;
 		void DestroySwapchainKHR(VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const;
@@ -69,8 +77,12 @@ namespace PAL::RenderAPI
         void QueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) const;
         void GetDeviceQueue(uint32_t queueFamilyIndex, uint32_t queueIndex, VkQueue* pQueue) const;
         
-        VkImageView CreateImageView(const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator) const;
+        VkResult CreateImage(const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage) const;
+        void DestroyImage(VkImage image, const VkAllocationCallbacks* pAllocator) const;
+        VkResult CreateImageView(const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pImageView) const;
         void DestroyImageView(VkImageView imageView, const VkAllocationCallbacks* pAllocator) const;
+        VkResult BindImageMemory(VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset) const;
+        void GetImageMemoryRequirements(VkImage image, VkMemoryRequirements* pMemoryRequirements) const;
         
         void CreateSemaphore(const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore) const;
         void DestroySemaphore(VkSemaphore semaphore, const VkAllocationCallbacks* pAllocator) const;
@@ -92,12 +104,18 @@ namespace PAL::RenderAPI
         
         VkResult QueueWaitIdle(VkQueue queue) const;
         
+        // Samplers
+        VkResult    CreateSampler(const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler) const;
+        void        DestroySampler(VkSampler sampler, const VkAllocationCallbacks* pAllocator) const;
+        
         // Command buffers
         void CmdBindVertexBuffer(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) const;
         void CmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const;
+        void CmdCopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions) const;
         void CmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const;
         void CmdDrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const;
         void CmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) const;
+        void CmdPipelineBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers) const;
         
         // Descriptors        
         VkResult CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const;
@@ -148,6 +166,8 @@ namespace PAL::RenderAPI
         PFN_vkResetCommandBuffer vkResetCommandBuffer{ nullptr };
         PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers{ nullptr };
         PFN_vkCmdCopyBuffer vkCmdCopyBuffer{ nullptr };
+        PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage{ nullptr };
+        PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier{ nullptr };
         
         PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets{ nullptr };
         PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer{ nullptr };
@@ -158,8 +178,13 @@ namespace PAL::RenderAPI
         PFN_vkQueueSubmit vkQueueSubmit{ nullptr };
         PFN_vkQueueWaitIdle vkQueueWaitIdle{ nullptr };
         
+        // Images
+        PFN_vkCreateImage vkCreateImage{ nullptr };
+        PFN_vkDestroyImage vkDestroyImage{ nullptr };
         PFN_vkCreateImageView vkCreateImageView{ nullptr };
         PFN_vkDestroyImageView vkDestroyImageView{ nullptr };
+        PFN_vkBindImageMemory vkBindImageMemory{ nullptr };
+        PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements{ nullptr };
         
         // Descriptors
         PFN_vkCreateDescriptorSetLayout vkCreateDescriptorSetLayout{ nullptr };
@@ -175,6 +200,10 @@ namespace PAL::RenderAPI
         PFN_vkGetBufferMemoryRequirements vkGetBufferMemoryRequirements{ nullptr };
         PFN_vkBindBufferMemory vkBindBufferMemory{ nullptr };
         PFN_vkDestroyBuffer vkDestroyBuffer{ nullptr };
+        
+        // Samplers
+        PFN_vkCreateSampler vkCreateSampler{ nullptr };
+        PFN_vkDestroySampler vkDestroySampler{ nullptr };
         
         // Memory
         PFN_vkAllocateMemory vkAllocateMemory{ nullptr };

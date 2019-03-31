@@ -43,7 +43,6 @@ bool VertexBufferStreamBase::Commit(CommitCommand)
     
     BufferDesc descriptorPosition;
     descriptorPosition.usage = mDataType;
-    descriptorPosition.sharingMode = SharingMode::Exclusive;
     descriptorPosition.memoryUsage = MemoryType::DeviceLocal;
     descriptorPosition.bufferSize = mStreamData.count * mStreamData.stride;
     descriptorPosition.data = mStreamData.data;

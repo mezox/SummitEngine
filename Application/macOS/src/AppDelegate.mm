@@ -9,87 +9,30 @@
 #import "AppDelegate.h"
 #import <AppKit/Appkit.h>
 
-#include <Logging/Logger.h>
-#include <Logging/LoggingService.h>
-
 #include <Engine/Engine.h>
 #include <PAL/FileSystem/File.h>
-#include <Engine/Window.h>
-#include <Renderer/Renderer.h>
 
 
-#ifdef LOG_MODULE_ID
-#undef LOG_MODULE_ID
-#endif
-
-#ifdef LOGGER_ID
-#undef LOGGER_ID
-#define LOGGER_ID "Application"
-#endif
-
-#define LOG_MODULE_ID LOG_MODULE_4BYTE(' ','A','P','P')
-
-using namespace Renderer;
+#include "SummitDemo.h"
 
 @interface AppDelegate ()
 {
-    Application::Window* window;
-    std::unique_ptr<Logging::Logger> logger;
+    std::unique_ptr<Demo::SummitDemo> demo;
 }
 @end
 
 @implementation AppDelegate
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Insert code here to initialize your application
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {    
+    Summit::EngineServiceLocator::Provide(Summit::CreateEngineService());
     
-    Engine::EngineServiceLocator::Provide(Engine::CreateEngineService());
-    Engine::EngineServiceLocator::Service()->Initialize();
+    auto& engine = *Summit::EngineServiceLocator::Service();
+    engine.Initialize();
     
-    logger = std::make_unique<Logging::Logger>(LOGGER_ID);
-    Logging::LoggingServiceLocator::Service().AddLogger(std::move(logger));
-    LOG(Information) << "SummitApp did finish launching!";
+    demo = std::make_unique<Demo::SummitDemo>(engine);
+    demo->PushToEngine(engine);
     
-    window = Engine::EngineServiceLocator::Service()->CreateWindow("SummitEngine", 1280, 720);
-    Engine::EngineServiceLocator::Service()->RegisterWindow(window);
-    
-    Object3D triangle;
-    auto& positionStream = triangle.mVertexBuffer.GetPositionDataStream();
-    auto& colorStream = triangle.mVertexBuffer.GetColorDataStream();
-    auto& indexStream = triangle.mVertexBuffer.GetIndexDataStream();
-    
-    auto& positionData = positionStream.GetData();
-    auto& colorData = colorStream.GetData();
-    auto& indexData = indexStream.GetData();
-    
-    positionData.push_back({ -0.5f, -0.5f });
-    positionData.push_back({ 0.5f, -0.5f });
-    positionData.push_back({ 0.5f, 0.5f });
-    positionData.push_back({ -0.5f, 0.5f });
-    
-    colorData.push_back({ 1.0f, 0.0f, 0.0f });
-    colorData.push_back({ 0.0f, 1.0f, 0.0f });
-    colorData.push_back({ 0.0f, 0.0f, 1.0f });
-    colorData.push_back({ 1.0f, 1.0f, 1.0f });
-    
-    indexData = { 0, 1, 2, 2, 3, 0 };
-    
-    positionStream.Lock(CommitCommand::Commit);
-    colorStream.Lock(CommitCommand::Commit);
-    indexStream.Lock(CommitCommand::Commit);
-    
-    auto& renderer = Renderer::RendererLocator::GetRenderer();
-    
-    Pipeline pipeline;
-    pipeline.vertexShaderFile = "/Users/tomaskubovcik/Dev/SummitEngine/vert.spv";
-    pipeline.fragmentShaderFile = "/Users/tomaskubovcik/Dev/SummitEngine/frag.spv";
-    pipeline.Create();
-    
-    renderer.CreateCommandBuffers(pipeline, triangle);
-    
-    Engine::EngineServiceLocator::Service()->Run();
-    
-    window->SetTitle("SummitEngineApplication");
+    engine.Run();
 }
 
 

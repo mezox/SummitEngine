@@ -1,7 +1,11 @@
 #pragma once
 #include "RendererBase.h"
 
-#include <Renderer/VertexBuffer.h>
+#include "VertexBuffer.h"
+#include "Image.h"
+#include "SwapChain.h"
+#include "Effect.h"
+
 #include <Math/Vector3.h>
 #include <Math/Vector2.h>
 
@@ -9,20 +13,6 @@
 
 namespace Renderer
 {
-	class RENDERER_API RendererResource
-	{
-	public:
-		virtual ~RendererResource() = default;
-	};
-    
-    class RENDERER_API SwapChainResource : public RendererResource
-    {
-    public:
-        virtual void Initialize(const uint32_t width, const uint32_t height) = 0;
-        virtual void Destroy() = 0;
-        virtual void SwapBuffers() = 0;
-    };
-
 	enum class DeviceType
 	{
 		External,
@@ -30,10 +20,19 @@ namespace Renderer
 		Integrated
 	};
     
+    class RENDERER_API FramebufferDesc
+    {
+    public:
+        uint32_t width{ 0 };
+        uint32_t height{ 0 };
+        void* data{ nullptr };
+    };
+    
     class RENDERER_API Object3D
     {
     public:
-        VertexBufferPCI<Vector3f, Vector3f, uint16_t> mVertexBuffer;
+        //VertexBufferPCI<Vector3f, Vector3f, uint16_t> mVertexBuffer;
+        VertexBufferPTCI<Vector3f, Vector2f, Vector3f, uint16_t> mVertexBuffer;
     };
 
 	enum class RenderBackend
@@ -48,16 +47,22 @@ namespace Renderer
 	class RENDERER_API IRenderer
 	{
 	public:
+        virtual ~IRenderer() = default;
+        
 		virtual void Initialize() = 0;
 		virtual void Deinitialize() = 0;
-        
-        virtual void UpdateCamera(uint32_t imageIndex) = 0;
 
-        virtual void CreateSwapChain(std::unique_ptr<SwapChainResource>& swapChain, void* nativeHandle, uint32_t width, uint32_t height) = 0;
-        virtual void CreateShader(std::unique_ptr<RendererResource>& shader, const std::vector<uint8_t>& code) const = 0;
-        virtual void CreatePipeline(DeviceObject& object, const std::string& vs, const std::string& fs) const = 0;
+        virtual void CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, void* nativeHandle, uint32_t width, uint32_t height) = 0;
+        virtual void CreateShader(DeviceObject& shader, const std::vector<uint8_t>& code) const = 0;
+        virtual void CreatePipeline(Pipeline& pipeline) = 0;
         virtual void CreateCommandBuffers(const Pipeline& pipeline, Object3D& object) = 0;
-        virtual void CreateBuffer(const BufferDesc& desc, DeviceObject& buffer) const = 0;
+        virtual void CreateBuffer(const BufferDesc& desc, DeviceObject& buffer) = 0;
+        virtual void CreateFramebuffer(const FramebufferDesc& desc, DeviceObject& framebuffer) = 0;
+        virtual void CreateImage(const ImageDesc& desc, DeviceObject& image) = 0;
+        virtual void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) = 0;
+        virtual void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) = 0;
+        
+        virtual void MapMemory(uint32_t size, void* data) = 0;
 	};
     
     RENDERER_API std::unique_ptr<IRenderer> CreateRenderer();
@@ -89,17 +94,21 @@ namespace Renderer
         static std::unique_ptr<IRenderer> mService;
     };
     
+    struct PipelineKey
+    {
+        
+    };
+    
     class RENDERER_API Pipeline
     {
     public:
         void Create()
         {
-            RendererLocator::GetRenderer().CreatePipeline(mDeviceObject, vertexShaderFile, fragmentShaderFile);
+            RendererLocator::GetRenderer().CreatePipeline(*this);
         }
         
     public:
-        std::string vertexShaderFile;
-        std::string fragmentShaderFile;
+        Effect effect;
         
         DeviceObject mDeviceObject;
     };

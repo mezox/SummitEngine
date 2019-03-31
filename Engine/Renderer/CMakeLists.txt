@@ -22,7 +22,7 @@ set(DEPENDENCIES
     Logging
     Math
     RenderAPI
-    Event
+    Core
 )
 
 # platform agnostic source files
@@ -30,16 +30,42 @@ set(PUBLIC_SOURCES
 	Public/Renderer/SwapChain.h
     Public/Renderer/Renderer.h
     Public/Renderer/VertexBuffer.h
+    Public/Renderer/Image.h
+    Public/Renderer/SharedDeviceTypes.h
     Public/Renderer/DeviceObject.h
+    Public/Renderer/View.h
+    Public/Renderer/Layer.h
+    Public/Renderer/Effect.h
+    Public/Renderer/RenderPass.h
+
+    # resources
+    Public/Renderer/Resources/DeviceResource.h
+    Public/Renderer/Resources/Framebuffer.h
 )
 
 set(PRIVATE_SOURCES
     Private/VertexBuffer.cpp
+    Private/Image.cpp
+    Private/Vulkan/VulkanCommandBuffer.h
+    Private/Vulkan/VulkanCommandBuffer.cpp
+    Private/Vulkan/VulkanGuiRenderer.h
+	Private/Vulkan/VulkanGuiRenderer.cpp
     Private/Vulkan/VulkanRendererImpl.h
 	Private/Vulkan/VulkanRendererImpl.cpp
 	Private/Vulkan/VulkanSwapChainImpl.h
 	Private/Vulkan/VulkanSwapChainImpl.cpp
 	Private/Vulkan/VulkanDeviceObjects.h
+	Private/View.cpp
+    Private/Effect.cpp
+    Private/Framebuffer.cpp
+	Private/SwapChainBase.cpp
+    Private/RenderPass.cpp
+
+    Private/Vulkan/VulkanTypes.h
+    Private/Vulkan/VulkanTypes.cpp
+
+
+    Private/stb_image.h
 )
 
 #set(PRECOMPILED_SOURCE Private/pch.cpp)

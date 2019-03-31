@@ -17,7 +17,6 @@ set(EXTERNAL_DEPENDENCIES
 )
 
 set(DEPENDENCIES
-	Core
 )
 
 # platform agnostic source files

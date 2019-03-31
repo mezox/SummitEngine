@@ -19,9 +19,9 @@ set(DEPENDENCIES
 	FileSystem
 	Logging
 	RenderAPI
-    Event
     Timer
     Math
+    Core
     Renderer
 )
 
@@ -31,6 +31,7 @@ set(PRIVATE_SOURCES
 )
 
 set(PUBLIC_SOURCES
+	Public/Engine/Application.h
 	Public/Engine/Engine.h
     Public/Engine/Window.h
     Public/Engine/WindowEvent.h

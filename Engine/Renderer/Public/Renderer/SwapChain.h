@@ -1,35 +1,44 @@
 #pragma once
 
 #include "RendererBase.h"
+#include "DeviceObject.h"
+#include "Resources/Framebuffer.h"
+#include "Resources/DeviceResource.h"
 
 #include <cstdint>
-#include <Renderer/DeviceObject.h>
+#include <vector>
+#include <memory>
 
 namespace Renderer
 {
-    enum class ImageFormat
-    {
-        DefaultSwapChain
-    };
-    
-    class SwapChainResource;
-    
-    class RENDERER_API SwapChain final
+    /*!
+     * @brief Base class representing swap chain.
+     */
+    class RENDERER_API SwapChainBase : public DeviceResource
     {
     public:
-        ~SwapChain() = default;
+        /*!
+         * @brief Base class representing swap chain.
+         */
+        explicit SwapChainBase(DeviceObject&& deviceObject);
         
-        void Initialize(const uint32_t width, const uint32_t height);
-        void Destroy();
-        void SwapBuffers();
+        /*!
+         @brief Swap chain destructor.
+         */
+        virtual ~SwapChainBase() = default;
         
-        ImageFormat GetImageFormat() const;
+        SwapChainBase(SwapChainBase&& other) = delete;
+        SwapChainBase& operator=(SwapChainBase&& other) = delete;
         
-    public:
-        std::unique_ptr<SwapChainResource> mSwapChainResource;
-        DeviceObject mDeviceObject;
+        void AddFramebuffer(Framebuffer&& fb) { mFramebuffers.push_back(std::move(fb)); }
+        void SetDepthAttachment(std::shared_ptr<Attachment> depth) { mDepthAttachment = std::move(depth); }
         
-    private:
-        ImageFormat mImageFormat;
+        virtual void Destroy() = 0;
+        virtual void SwapBuffers() = 0;
+
+    protected:
+        uint32_t mImageIndex{ 0 };
+        std::vector<Framebuffer> mFramebuffers;
+        std::shared_ptr<Attachment> mDepthAttachment;
     };
 }

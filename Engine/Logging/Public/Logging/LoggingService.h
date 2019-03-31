@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Core/Service.h>
 #include "LoggingBase.h"
 #include "Logger.h"
 

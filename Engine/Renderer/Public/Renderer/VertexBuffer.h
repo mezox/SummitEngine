@@ -2,6 +2,7 @@
 
 #include "RendererBase.h"
 #include "DeviceObject.h"
+#include "SharedDeviceTypes.h"
 
 #include <Math/Vector2.h>
 #include <Math/Vector3.h>
@@ -10,47 +11,13 @@
 #include <array>
 #include <memory>
 
-template<typename T>
-struct BitMaskOperatorEnable
-{
-    static const bool enable = false;
-};
-
-template<typename T>
-typename std::enable_if<BitMaskOperatorEnable<T>::enable, T>::type
-operator |(T lhs, T rhs)
-{
-    using UT = typename std::underlying_type<T>::type;
-    return static_cast<T>(static_cast<UT>(lhs) | static_cast<UT>(rhs));
-}
-
-template<typename T>
-typename std::enable_if<BitMaskOperatorEnable<T>::enable, T>::type
-operator &(T lhs, T rhs)
-{
-    using UT = typename std::underlying_type<T>::type;
-    return static_cast<T>(static_cast<UT>(lhs) & static_cast<UT>(rhs));
-}
-
 namespace Renderer
 {
     enum class BufferUsage
     {
-        VertexBuffer = 0,
-        IndexBuffer,
-    };
-    
-    enum class SharingMode
-    {
-        Exclusive = 0,
-    };
-    
-    enum MemoryType
-    {
-        Undefined = 0x00000000,
-        DeviceLocal = 0x00000001,
-        HostVisible = 0x00000002,
-        HostCoherent = 0x00000004
+        Undefined,
+        VertexBuffer,
+        IndexBuffer
     };
     
     enum class VertexDataInputRate
@@ -62,7 +29,6 @@ namespace Renderer
     struct RENDERER_API BufferDesc
     {
         BufferUsage usage;
-        SharingMode sharingMode;
         MemoryType memoryUsage;
         uint32_t bufferSize{ 0 };
         void* data{ nullptr };
@@ -234,6 +200,51 @@ namespace Renderer
             }
             
             return (VertexBufferStream<IndexType>&)(*mStreams[1].get());
+        }
+        
+        VertexBufferStream<ColorType>& GetColorDataStream()
+        {
+            if(!mStreams[2])
+            {
+                mStreams[2] = std::make_unique<VertexBufferStream<ColorType>>(BufferUsage::VertexBuffer);
+            }
+            
+            return (VertexBufferStream<ColorType>&)(*mStreams[2].get());
+        }
+    };
+    
+    template<typename PositionType, typename TexCoordType, typename ColorType, typename IndexType>
+    class VertexBufferPTCI : public VertexBuffer<4>
+    {
+    public:
+        VertexBufferStream<PositionType>& GetPositionDataStream()
+        {
+            if(!mStreams[0])
+            {
+                mStreams[0] = std::make_unique<VertexBufferStream<PositionType>>(BufferUsage::VertexBuffer);
+            }
+            
+            return (VertexBufferStream<PositionType>&)(*mStreams[0].get());
+        }
+        
+        VertexBufferStream<IndexType>& GetIndexDataStream()
+        {
+            if(!mStreams[1])
+            {
+                mStreams[1] = std::make_unique<VertexBufferStream<IndexType>>(BufferUsage::IndexBuffer);
+            }
+            
+            return (VertexBufferStream<IndexType>&)(*mStreams[1].get());
+        }
+        
+        VertexBufferStream<TexCoordType>& GetTexCoordDataStream()
+        {
+            if(!mStreams[3])
+            {
+                mStreams[3] = std::make_unique<VertexBufferStream<TexCoordType>>(BufferUsage::VertexBuffer);
+            }
+            
+            return (VertexBufferStream<TexCoordType>&)(*mStreams[3].get());
         }
         
         VertexBufferStream<ColorType>& GetColorDataStream()

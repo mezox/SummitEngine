@@ -2,7 +2,7 @@
 
 namespace Logging
 {
-    enum class Severity : uint8_t
+    enum class Severity
     {
         Information,
         Debug,

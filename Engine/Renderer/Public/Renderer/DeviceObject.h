@@ -9,12 +9,24 @@ namespace Renderer
 {
     class PipelineDeviceObject;
     class BufferDeviceObject;
+    class FramebufferDeviceObject;
+    class VulkanShaderDeviceObject;
+    class TextureDeviceObject;
+    class VulkanRenderPassDeviceObject;
+    class VulkanAttachmentDeviceObject;
+    class VulkanSwapChainDeviceObject;
     
     class IDeviceObjectVisitor
     {
     public:
+        virtual void Visit(const VulkanShaderDeviceObject& object) = 0;
+        virtual void Visit(const VulkanRenderPassDeviceObject& object) = 0;
         virtual void Visit(const PipelineDeviceObject& object) = 0;
         virtual void Visit(const BufferDeviceObject& object) = 0;
+        virtual void Visit(const FramebufferDeviceObject& object) = 0;
+        virtual void Visit(const TextureDeviceObject& object) = 0;
+        virtual void Visit(const VulkanAttachmentDeviceObject& object) = 0;
+        virtual void Visit(const VulkanSwapChainDeviceObject& object) = 0;
     };
     
     class RENDERER_API DeviceObject
@@ -65,6 +77,7 @@ namespace Renderer
     public:
         DeviceObject() : mImpl(new (&mStorage) EmptyDeviceObject) {}
         DeviceObject(DeviceObject&& other) noexcept : mImpl(other.mImpl->Move(&mStorage)) {}
+        
         DeviceObject(const DeviceObject& other) = delete;
         ~DeviceObject() { mImpl->~IDeviceObjectImpl(); }
         
@@ -101,4 +114,12 @@ namespace Renderer
         std::aligned_storage<c_max_id_sizeof>::type mStorage;
         IDeviceObjectImpl* mImpl{ nullptr };
     };
+    
+    template<typename T>
+    DeviceObject Basify(T&& impl)
+    {
+        DeviceObject obj;
+        obj = std::move(impl);
+        return obj;
+    }
 }

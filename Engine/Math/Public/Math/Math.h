@@ -14,11 +14,11 @@ namespace Math
 	constexpr T RadiansToDegrees(const T angle) { return static_cast<T>(angle * 180 / MATH_PI); }
 
 	template<typename T>
-	T Tan(const T angle) { return std::tan(angle); }
+	constexpr T Tan(const T angle) { return std::tan(angle); }
     
     template<typename T>
-    T Cos(const T angle) { return std::cos(angle); }
+    constexpr T Cos(const T angle) { return std::cos(angle); }
     
     template<typename T>
-    T Sin(const T angle) { return std::sin(angle); }
+    constexpr T Sin(const T angle) { return std::sin(angle); }
 }

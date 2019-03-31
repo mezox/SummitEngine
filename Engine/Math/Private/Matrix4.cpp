@@ -159,7 +159,18 @@ void Matrix4::RotateX(float angle)
 
 void Matrix4::RotateY(float angle)
 {
+    Matrix4 m;
+    m.MakeIdentity();
     
+    const float cosAngle = Math::Cos(angle);
+    const float sinAngle = Math::Sin(angle);
+    
+    m(1,1) = cosAngle;
+    m(1,3) = sinAngle;
+    m(3,1) = -sinAngle;
+    m(3,3) = cosAngle;
+    
+    *this *= m;
 }
 
 void Matrix4::RotateZ(float angle)

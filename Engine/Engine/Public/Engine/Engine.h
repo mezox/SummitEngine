@@ -1,31 +1,26 @@
 #pragma once
 
-#include "WindowEvent.h"
 #include <Engine/EngineBase.h>
-#include <Event/EventHandler.h>
-    
-#include <vector>
-    
-namespace Application
-{
-    class Window;
-}
+#include <Event/Signal.h>
 
-namespace Renderer
+namespace Summit
 {
-    class IRenderer;
-}
+    /*!
+     * @brief Single render frame data.
+     */
+    struct ENGINE_API FrameData
+    {
+        /*!
+         * @brief Time since last frame.
+         */
+        float deltaTime{ 0.0f };
+    };
     
-namespace Engine
-{
     class ENGINE_API SummitEngine
     {
     public:
         SummitEngine();
         ~SummitEngine() {}
-        
-        Application::Window* CreateWindow(const char* title, uint32_t width, uint32_t height) const;
-        void RegisterWindow(Application::Window* window);
         
         void Initialize();
         void StartFrame();
@@ -35,15 +30,12 @@ namespace Engine
         
         void Run();
         
-    private:
-        void OnWindowResize(const Application::WindowResizeEvent& event);
-        void OnWindowMove(const Application::WindowMoveEvent& event);
-        
-    private:
-        std::vector<Application::Window*> mWindows;
-        
-        Event::EventHandlerFunc<SummitEngine, Application::WindowResizeEvent> mWindowResizeHandler;
-        Event::EventHandlerFunc<SummitEngine, Application::WindowMoveEvent> mWindowMoveHandler;
+    public:
+        sigslot::signal<const FrameData&> EarlyUpdate;
+        sigslot::signal<const FrameData&> Updatee;
+        sigslot::signal<const FrameData&> LateUpdate;
+        sigslot::signal<const FrameData&> Render;
+        sigslot::signal<const FrameData&> UIRender;
     };
 
     ENGINE_API std::shared_ptr<SummitEngine> CreateEngineService();

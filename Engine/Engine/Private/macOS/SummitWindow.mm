@@ -1,15 +1,17 @@
 #import "SummitWindow.h"
 
-#include <Event/EventService.h>
-#include <Engine/WindowEvent.h>
+#include <Renderer/View.h>
+#include <Dispatcher/SummitDispatcher.h>
 
-using namespace Event;
+using namespace Renderer;
 
 @implementation SummitWindowDelegate
-- (instancetype)initWithWindow:(NSWindow*)window
+
+- (instancetype)initWithWindow:(NSWindow*)window signals:(Application::WindowSignalsBase*)winsig
 {
     self = [super init];
     self->window = window;
+    self->signals = winsig;
     
     return self;
 }
@@ -27,13 +29,19 @@ using namespace Event;
 - (void)windowDidResize:(NSNotification *)notification
 {
     NSRect rect = [window.contentView frame];
-    //EventServiceLocator::Service().FireEvent(Application::WindowResizeEvent(rect.size.width, rect.size.height));
+    
+    Core::DispatcherService::Service().Post([self, &rect](){
+        signals->WindowResized(rect.size.width, rect.size.height);
+    });
 }
 
 - (void)windowDidMove:(NSNotification *)notification
 {
     NSRect rect = [window frame];
-    EventServiceLocator::Service().FireEvent(Application::WindowMoveEvent(rect.origin.x , rect.origin.y));
+    
+    Core::DispatcherService::Service().Post([self, &rect](){
+        signals->WindowMoved(rect.origin.x , rect.origin.y);
+    });
 }
 
 - (void)windowDidMiniaturize:(NSNotification *)notification
@@ -48,7 +56,7 @@ using namespace Event;
 
 - (void)windowWillClose:(NSNotification *)notification
 {
-    EventServiceLocator::Service().FireEvent(Application::WindowWillCloseEvent());
+    //EventServiceLocator::Service().FireEvent(Application::WindowWillCloseEvent());
 }
 @end
 
@@ -66,9 +74,6 @@ using namespace Event;
 
 - (void)mouseMoved:(NSEvent *)event
 {
-//    //LOG_INFORMATION("Mouse moved")
-//    NSPoint locationInView = [event locationInWindow];
-//    NSLog(@"mouseMoved: %f %f", locationInView.x, locationInView.y);
 }
 
 @end

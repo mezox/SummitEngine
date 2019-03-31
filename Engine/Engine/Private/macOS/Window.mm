@@ -1,7 +1,6 @@
 #include <Engine/Window.h>
-#include <Renderer/Renderer.h>
 #include <Renderer/SwapChain.h>
-#include <Event/EventService.h>
+#include <Logging/LoggingService.h>
 
 #import <Cocoa/Cocoa.h>
 #import "SummitWindow.h"
@@ -20,7 +19,7 @@ namespace Application
                                                        backing:NSBackingStoreBuffered
                                                          defer:NO];
             
-            windowDelegate = [[SummitWindowDelegate alloc] initWithWindow:window];
+            windowDelegate = [[SummitWindowDelegate alloc] initWithWindow:window signals:&mSignals];
             //mainView = [[NSView alloc] init];
             
             view = [[SummitRenderView alloc] initWithBounds:NSMakeRect(0, 0, width, height)];
@@ -31,8 +30,6 @@ namespace Application
             [window setTitle:[NSString stringWithUTF8String:title.c_str()]];
             [window setDelegate:windowDelegate];
             [window center];
-        
-//            [mainView addSubview:view];
             
             [window setAcceptsMouseMovedEvents: YES];
             [window orderFront:nil];
@@ -45,25 +42,31 @@ namespace Application
         
     public:
         SummitWindow* window = nil;
-        id windowDelegate = nil;
+        SummitWindowDelegate* windowDelegate = nil;
         NSView* mainView = nil;
         SummitRenderView* view = nil;
+        WindowSignalsBase mSignals;
     };
     
-    Window::Window(Renderer::IRenderer& renderer, const std::string& title, const uint16_t width, const uint16_t height)
+    Window::Window(const std::string& title, const uint16_t width, const uint16_t height)
         : mWidth(width)
         , mHeight(height)
         , mNativeWindow(new Application::Window::NativeWindow(title, width, height))
     {
-        mWindowWillClose = Event::EventHandlerFunc(true, this, &Window::OnWindowWillClose);
-        Event::EventServiceLocator::Service().RegisterEventHandler(mWindowWillClose);
+        auto viewPtr = std::make_unique<Renderer::View>(width, height, (void*)CFBridgingRetain(mNativeWindow->view));
+        mNativeWindow->mSignals.WindowResized.connect([view = viewPtr.get()](const uint16_t width, const uint16_t height){
+            view->OnResize(width, height);
+        });
         
-        renderer.CreateSwapChain(mSwapChain.mSwapChainResource, (void*)CFBridgingRetain(mNativeWindow->view), width, height);
+        mViews.push_back(std::move(viewPtr));
     }
     
     void Window::Update()
     {
-        mSwapChain.mSwapChainResource->SwapBuffers();
+        for(auto& view : mViews)
+        {
+            view->Update();
+        }
     }
     
     void Window::SetTitle(const std::string& title)
@@ -71,17 +74,8 @@ namespace Application
         [mNativeWindow->window setTitle:[NSString stringWithUTF8String:title.c_str()]];
     }
     
-    Renderer::ImageFormat Window::GetImageFormat() const
-    {
-        return mSwapChain.GetImageFormat();
-    }
-    
     Window::~Window()
     {
         // TODO: Release native window
-    }
-    
-    void Window::OnWindowWillClose(const WindowWillCloseEvent& event)
-    {
     }
 }

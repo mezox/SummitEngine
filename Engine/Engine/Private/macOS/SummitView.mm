@@ -1,13 +1,6 @@
 #import "SummitView.h"
 #import <QuartzCore/CAMetalLayer.h>
 
-#include <Logging/LoggingService.h>
-
-#ifdef LOGGER_ID
-#undef LOGGER_ID
-#define LOGGER_ID "Application"
-#endif
-
 @implementation SummitRenderView
 - (instancetype)initWithBounds:(NSRect)bounds
 {

@@ -21,6 +21,14 @@ namespace PAL::RenderAPI
 	{
 		vkDestroyDevice(mLogicalDevice, nullptr);
 	}
+    
+    bool VulkanDevice::IsFeatureSupported(DeviceFeature f) const
+    {
+        if(f == DeviceFeature::AnisotropicFiltering)
+            return mDeviceFeatures.samplerAnisotropy;
+        
+        return false;
+    }
 
 	void VulkanDevice::CreateSwapchainKHR(const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const
 	{
@@ -165,11 +173,33 @@ namespace PAL::RenderAPI
         VK_CHECK_RESULT(vkResetCommandBuffer(commandBuffer, flags));
     }
     
-    VkImageView VulkanDevice::CreateImageView(const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator) const
+    VkResult VulkanDevice::CreateImage(const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage) const
     {
-        VkImageView imageView{ VK_NULL_HANDLE };
-        VK_CHECK_RESULT(vkCreateImageView(mLogicalDevice, pCreateInfo, nullptr, &imageView));
-        return imageView;
+        const auto result = vkCreateImage(mLogicalDevice, pCreateInfo, pAllocator, pImage);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::DestroyImage(VkImage image, const VkAllocationCallbacks* pAllocator) const
+    {
+        vkDestroyImage(mLogicalDevice, image, pAllocator);
+    }
+    
+    VkResult VulkanDevice::BindImageMemory(VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset) const
+    {
+        const auto result = vkBindImageMemory(mLogicalDevice, image, memory, memoryOffset);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::GetImageMemoryRequirements(VkImage image, VkMemoryRequirements* pMemoryRequirements) const
+    {
+        vkGetImageMemoryRequirements(mLogicalDevice, image, pMemoryRequirements);
+    }
+    
+    VkResult VulkanDevice::CreateImageView(const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pImageView) const
+    {
+        VK_CHECK_RESULT(vkCreateImageView(mLogicalDevice, pCreateInfo, nullptr, pImageView));
     }
     
     void VulkanDevice::DestroyImageView(VkImageView imageView, const VkAllocationCallbacks* pAllocator) const
@@ -268,6 +298,18 @@ namespace PAL::RenderAPI
         return result;
     }
     
+    VkResult VulkanDevice::CreateSampler(const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler) const
+    {
+        const auto result = vkCreateSampler(mLogicalDevice, pCreateInfo, pAllocator, pSampler);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
+    void VulkanDevice::DestroySampler(VkSampler sampler, const VkAllocationCallbacks* pAllocator) const
+    {
+        vkDestroySampler(mLogicalDevice, sampler, pAllocator);
+    }
+    
     void VulkanDevice::CmdBindVertexBuffer(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) const
     {
         vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
@@ -276,6 +318,11 @@ namespace PAL::RenderAPI
     void VulkanDevice::CmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const
     {
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
+    }
+    
+    void VulkanDevice::CmdCopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions) const
+    {
+        vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions);
     }
     
     void VulkanDevice::CmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const
@@ -291,6 +338,11 @@ namespace PAL::RenderAPI
     void VulkanDevice::CmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) const
     {
         vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
+    }
+    
+    void VulkanDevice::CmdPipelineBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers) const
+    {
+        vkCmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
     }
     
     VkResult VulkanDevice::CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const
@@ -342,8 +394,13 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDeviceWaitIdle);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkQueueSubmit);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkGetDeviceQueue);
+        
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateImage);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyImage);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkBindImageMemory);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateImageView);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyImageView);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkGetImageMemoryRequirements);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateShaderModule);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyShaderModule);
@@ -354,6 +411,15 @@ namespace PAL::RenderAPI
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateRenderPass);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyRenderPass);
+        
+        // Samplers
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateSampler);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroySampler);
+        
+        // Command buffers
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindVertexBuffers);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdCopyBuffer);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdCopyBufferToImage);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBeginRenderPass);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdEndRenderPass);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindPipeline);
@@ -361,6 +427,7 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindIndexBuffer);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdDrawIndexed);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindDescriptorSets);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdPipelineBarrier);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateDescriptorSetLayout);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyDescriptorSetLayout);
@@ -399,10 +466,6 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkWaitForFences);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkResetFences);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyFence);
-        
-        // Command buffers
-        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindVertexBuffers);
-        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdCopyBuffer);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkQueueWaitIdle);
 
