@@ -88,9 +88,7 @@ namespace Renderer
         VkCommandPool mCommandPool{ VK_NULL_HANDLE };
         std::vector<VkCommandBuffer> mCommandBuffers;
         std::vector<VkFramebuffer> mFramebuffers;
-        VkDescriptorSetLayout descriptorSetLayout;
         VkDescriptorPool mDescriptorPool;
-        std::vector<VkDescriptorSet> mDescriptorSets;
         
         std::vector<VkBuffer> uniformBuffers;
         std::vector<VkDeviceMemory> uniformBuffersMemory;

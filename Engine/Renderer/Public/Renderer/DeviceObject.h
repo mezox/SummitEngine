@@ -16,6 +16,12 @@ namespace Renderer
     class VulkanAttachmentDeviceObject;
     class VulkanSwapChainDeviceObject;
     
+    namespace Vulkan
+    {
+        class DescriptorSetLayoutDeviceObject;
+        class DescriptorSetDeviceObject;
+    }
+    
     class IDeviceObjectVisitor
     {
     public:
@@ -27,6 +33,8 @@ namespace Renderer
         virtual void Visit(const TextureDeviceObject& object) = 0;
         virtual void Visit(const VulkanAttachmentDeviceObject& object) = 0;
         virtual void Visit(const VulkanSwapChainDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::DescriptorSetDeviceObject& object) = 0;
     };
     
     class RENDERER_API DeviceObject

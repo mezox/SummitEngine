@@ -22,7 +22,13 @@
 #define LOG_MODULE_ID LOG_MODULE_4BYTE('V','K','R','N')
 
 using namespace Renderer;
+using namespace Renderer::Vulkan;
 using namespace PAL::FileSystem;
+
+namespace
+{
+    constexpr uint8_t SWAP_CHAIN_IMAGE_COUNT = 2;
+}
 
 std::unique_ptr<IRenderer> RendererLocator::mService;
 
@@ -179,11 +185,14 @@ void Renderer::VulkanRenderer::CreateCommandBuffers(const Pipeline& pipeline, Ob
         PipelineObjectVisitor visitor;
         pipeline.mDeviceObject.Accept(visitor);
         
+        DescriptorSetVisitor dsVisitor;
+        pipeline.effect.mDescriptorSets[i].Accept(dsVisitor);
+        
         mDevice->BeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         mDevice->BindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, visitor.pipeline);
         mDevice->CmdBindVertexBuffer(mCommandBuffers[i], 0, object.mVertexBuffer.GetDataStreamCount(), buffers, offset);
         mDevice->CmdBindIndexBuffer(mCommandBuffers[i], indexVisitor.buffer, 0, (indexStream.GetStride() == sizeof(uint16_t)) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
-        mDevice->CmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, visitor.layout, 0, 1, &mDescriptorSets[i], 0, nullptr);
+        mDevice->CmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, visitor.layout, 0, 1, &dsVisitor.descriptorSet, 0, nullptr);
         mDevice->CmdDrawIndexed(mCommandBuffers[i], indexStream.GetElementCount(), 1, 0, 0, 0);
         mDevice->EndRenderPass(mCommandBuffers[i]);
         mDevice->EndCommandBuffer(mCommandBuffers[i]);
@@ -527,6 +536,7 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
     layoutInfo.pBindings = layoutBindings.data();
     
+    VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
     mDevice->CreateDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSetLayout);
     
     // Setup descriptor pool
@@ -536,32 +546,34 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     for(const auto& descriptorTypeData : descriptorPoolSizesMap)
     {
         VkDescriptorPoolSize size{};
-        size.descriptorCount = descriptorTypeData.second * 2;
+        size.descriptorCount = descriptorTypeData.second * SWAP_CHAIN_IMAGE_COUNT;
         size.type = descriptorTypeData.first;
         poolSizes.push_back(std::move(size));
     }
     
+    // Pre-allocate this for whole renderer?
     VkDescriptorPoolCreateInfo descPoolInfo{};
     descPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     descPoolInfo.pPoolSizes = poolSizes.data();
-    descPoolInfo.maxSets = static_cast<uint32_t>(2);        // Depends on swap chain images cnt
+    descPoolInfo.maxSets = static_cast<uint32_t>(SWAP_CHAIN_IMAGE_COUNT);        // Depends on swap chain images cnt
     
     mDevice->CreateDescriptorPool(&descPoolInfo, nullptr, &mDescriptorPool);
     
     // Create descriptor sets
-    std::vector<VkDescriptorSetLayout> layouts(2, descriptorSetLayout); // Depends on swap chain images cnt
+    std::vector<VkDescriptorSetLayout> layouts(SWAP_CHAIN_IMAGE_COUNT, descriptorSetLayout); // Depends on swap chain images cnt
     
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = mDescriptorPool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(2);        // Depends on swap chain images cnt
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(SWAP_CHAIN_IMAGE_COUNT);        // Depends on swap chain images cnt
     allocInfo.pSetLayouts = layouts.data();
     
-    mDescriptorSets.resize(2);           // Depends on swap chain images cnt
-    mDevice->AllocateDescriptorSets(&allocInfo, mDescriptorSets.data());
+    std::vector<VkDescriptorSet> descriptorSets;
+    descriptorSets.resize(SWAP_CHAIN_IMAGE_COUNT);           // Depends on swap chain images cnt
+    mDevice->AllocateDescriptorSets(&allocInfo, descriptorSets.data());
     
-    for (size_t i = 0; i < 2; i++)          // Depends on swap chain images cnt
+    for (size_t i = 0; i < SWAP_CHAIN_IMAGE_COUNT; i++)          // Depends on swap chain images cnt
     {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = uniformBuffers[i];
@@ -575,7 +587,7 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
         
         std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = mDescriptorSets[i];
+        descriptorWrites[0].dstSet = descriptorSets[i];
         descriptorWrites[0].dstBinding = 0;
         descriptorWrites[0].dstArrayElement = 0;
         descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -583,7 +595,7 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
         descriptorWrites[0].pBufferInfo = &bufferInfo;
         
         descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = mDescriptorSets[i];
+        descriptorWrites[1].dstSet = descriptorSets[i];
         descriptorWrites[1].dstBinding = 1;
         descriptorWrites[1].dstArrayElement = 0;
         descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -593,13 +605,13 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
         mDevice->UpdateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
     
+    DescriptorSetLayoutDeviceObject dslDeviceObject(descriptorSetLayout);
+    effect.mDescriptorSetLayouts.push_back(Basify(std::move(dslDeviceObject)));
     
-    
-    
-    
-    
-    
-    
+    for (size_t i = 0; i < SWAP_CHAIN_IMAGE_COUNT; ++i)
+    {
+        effect.mDescriptorSets.push_back(Basify(DescriptorSetDeviceObject(descriptorSets[i])));
+    }
     
     
     // Vertex input

@@ -71,5 +71,7 @@ namespace Renderer
         std::unordered_map<uint8_t, std::vector<Format>> mAttribBindings;
         std::vector<UniformBindingDesc> mUniformBindings;
         std::vector<DeviceObject> mModules;
+        std::vector<DeviceObject> mDescriptorSetLayouts;
+        std::vector<DeviceObject> mDescriptorSets;
     };
 }

@@ -4,6 +4,31 @@
 
 namespace Renderer
 {
+    namespace Vulkan
+    {
+        class DescriptorSetLayoutDeviceObject
+        {
+        public:
+            DescriptorSetLayoutDeviceObject(const VkDescriptorSetLayout& dsl)
+            : descriptorSetLayout(dsl)
+            {}
+            
+        public:
+            VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
+        };
+        
+        class DescriptorSetDeviceObject
+        {
+        public:
+            DescriptorSetDeviceObject(const VkDescriptorSet& ds)
+            : descriptorSet(ds)
+            {}
+            
+        public:
+            VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
+        };
+    }
+    
     class VulkanShaderDeviceObject
     {
     public:
@@ -124,6 +149,8 @@ namespace Renderer
         void Visit(const TextureDeviceObject& object) override {}
         void Visit(const VulkanAttachmentDeviceObject& object) override {}
         void Visit(const VulkanSwapChainDeviceObject& object) override {}
+        void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
+        void Visit(const Vulkan::DescriptorSetDeviceObject& object) override{}
     };
     
     class DeviceObjectCounterVisitorBase : public IDeviceObjectVisitor
@@ -137,6 +164,8 @@ namespace Renderer
         void Visit(const TextureDeviceObject& object) override {}
         void Visit(const VulkanAttachmentDeviceObject& object) override {}
         void Visit(const VulkanSwapChainDeviceObject& object) override {}
+        void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
+        void Visit(const Vulkan::DescriptorSetDeviceObject& object) override {}
         
     public:
         uint16_t buffers{ 0 };
@@ -202,5 +231,29 @@ namespace Renderer
     public:
         VkSwapchainKHR swapChain{ VK_NULL_HANDLE };
         VkSurfaceKHR surface{ VK_NULL_HANDLE };
+    };
+    
+    class DescriptorSetVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const Vulkan::DescriptorSetDeviceObject& object) override
+        {
+            descriptorSet = object.descriptorSet;
+        }
+        
+    public:
+        VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
+    };
+    
+    class DescriptorSetLayoutVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override
+        {
+            descriptorSetLayout = object.descriptorSetLayout;
+        }
+        
+    public:
+        VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
     };
 }
