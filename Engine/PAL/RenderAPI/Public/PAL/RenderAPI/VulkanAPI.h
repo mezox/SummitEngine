@@ -116,7 +116,7 @@ namespace PAL::RenderAPI
 		PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR{ nullptr };
     };
 
-    class RENDERAPI_API VulkanAPIServiceLocator
+    class RENDERAPI_API VulkanAPI
     {
     public:
         static void Provide(std::unique_ptr<VulkanRenderAPI> service)

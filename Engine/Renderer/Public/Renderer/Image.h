@@ -1,5 +1,6 @@
 #pragma once
 #include <Renderer/RendererBase.h>
+#include <Renderer/Resources/DeviceResource.h>
 
 #include "SharedDeviceTypes.h"
 #include "DeviceObject.h"
@@ -39,7 +40,7 @@ namespace Renderer
         void* data{ nullptr };
     };
     
-    class RENDERER_API Image
+    class RENDERER_API Image : public DeviceResource
     {
     public:
         Image(uint32_t w, uint32_t h, Format format, void* data);
@@ -59,7 +60,6 @@ namespace Renderer
         uint32_t mHeight{ 0 };
         Format mFormat{ Format::Undefined };
         std::unique_ptr<std::vector<unsigned char>> mData{ nullptr };
-        DeviceObject mGpuImage;
     };
     
     enum class AddressMode

@@ -36,6 +36,13 @@ void Effect::AddUniformBuffer(ModuleStage stage, uint32_t binding, const Buffer&
     mUniformBuffers.push_back(&buffer);
 }
 
+void Effect::AddTexture(ModuleStage stage, uint32_t binding, const Image& image)
+{
+    AddUniform(UniformType::Sampler, stage, binding, 1);
+    
+    mTextures.push_back(&image);
+}
+
 uint8_t Effect::GetBindingCount() const
 {
     return mAttribBindings.size();

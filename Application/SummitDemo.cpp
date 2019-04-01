@@ -91,6 +91,8 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     mvpUboDesc.memoryUsage = MemoryType(MemoryType::HostVisible | MemoryType::HostCoherent);
     renderer.CreateBuffer(mvpUboDesc, mUniformBuffer.deviceObject);
     
+    mTexture = std::make_unique<Image>(Image::CreateFromFile("/Users/tomaskubovcik/Dev/SummitEngine/texture.jpg"));
+    
     // Setup stages
     pipeline.effect.AddModule(ModuleStage::Vertex, "/Users/tomaskubovcik/Dev/SummitEngine/vert.spv");
     pipeline.effect.AddModule(ModuleStage::Fragment, "/Users/tomaskubovcik/Dev/SummitEngine/frag.spv");
@@ -102,7 +104,7 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     
     // Setup uniforms
     pipeline.effect.AddUniformBuffer(ModuleStage::Vertex, 0, mUniformBuffer);
-    pipeline.effect.AddUniform(UniformType::Sampler, ModuleStage::Fragment, 1, 1);
+    pipeline.effect.AddTexture(ModuleStage::Fragment, 1, *mTexture.get());
     
     pipeline.Create();
     

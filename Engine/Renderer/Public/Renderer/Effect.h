@@ -12,6 +12,7 @@
 namespace Renderer
 {
     class Buffer;
+    class Image;
     
     enum class ModuleStage
     {
@@ -61,9 +62,10 @@ namespace Renderer
         void AddAttributeExplicit(Format f, uint32_t stride, uint32_t location, uint32_t binding, uint32_t offset);
         void AddAttribute(Format f, uint32_t binding);
         
-        void AddUniform(UniformType f, ModuleStage type, uint32_t binding, uint32_t count);
+        void AddUniform(UniformType f, ModuleStage stage, uint32_t binding, uint32_t count);
         
-        void AddUniformBuffer(ModuleStage type, uint32_t binding, const Buffer& buffer);
+        void AddUniformBuffer(ModuleStage stage, uint32_t binding, const Buffer& buffer);
+        void AddTexture(ModuleStage stage, uint32_t binding, const Image& image);
         
         uint8_t GetBindingCount() const;
         const std::vector<Format>& GetBindingDescriptor(uint8_t binding) const;
@@ -79,5 +81,6 @@ namespace Renderer
         std::vector<DeviceObject> mDescriptorSets;
         
         std::vector<const Buffer*> mUniformBuffers;
+        std::vector<const Image*> mTextures;
     };
 }

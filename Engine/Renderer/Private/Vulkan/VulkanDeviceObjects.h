@@ -27,6 +27,16 @@ namespace Renderer
         public:
             VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
         };
+        
+        struct FenceDeviceObject
+        {
+            VkFence fence{ VK_NULL_HANDLE };
+        };
+        
+        struct SemaphoreDeviceObject
+        {
+            VkSemaphore semaphore{ VK_NULL_HANDLE };
+        };
     }
     
     class VulkanShaderDeviceObject
@@ -105,7 +115,10 @@ namespace Renderer
     {
     public:
         TextureDeviceObject() = default;
-        TextureDeviceObject(const VkImage& img, const VkImageView& view, const VkDeviceMemory& mem, const VkSampler& s) : image(img), imageView(view), memory(mem), sampler(s) {}
+        TextureDeviceObject(const VkImage& img, const VkImageView& view, const VkDeviceMemory& mem, const VkSampler& s) : image(img), imageView(view), memory(mem), sampler(s)
+        {
+            
+        }
         
     public:
         VkImage image{ VK_NULL_HANDLE };
@@ -151,6 +164,9 @@ namespace Renderer
         void Visit(const VulkanSwapChainDeviceObject& object) override {}
         void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
         void Visit(const Vulkan::DescriptorSetDeviceObject& object) override{}
+        void Visit(const Vulkan::SemaphoreDeviceObject& object) override{}
+        void Visit(const Vulkan::FenceDeviceObject& object) override{}
+        void Visit(const Vulkan::EventDeviceObject& object) override{}
     };
     
     class DeviceObjectCounterVisitorBase : public IDeviceObjectVisitor
@@ -166,6 +182,9 @@ namespace Renderer
         void Visit(const VulkanSwapChainDeviceObject& object) override {}
         void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
         void Visit(const Vulkan::DescriptorSetDeviceObject& object) override {}
+        void Visit(const Vulkan::SemaphoreDeviceObject& object) override{}
+        void Visit(const Vulkan::FenceDeviceObject& object) override{}
+        void Visit(const Vulkan::EventDeviceObject& object) override{}
         
     public:
         uint16_t buffers{ 0 };
@@ -272,5 +291,23 @@ namespace Renderer
         
     public:
         VkDeviceMemory memory{ VK_NULL_HANDLE };
+    };
+    
+    class TextureVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const TextureDeviceObject& object) override
+        {
+            image = object.image;
+            memory = object.memory;
+            imageView = object.imageView;
+            sampler = object.sampler;
+        }
+        
+    public:
+        VkDeviceMemory memory{ VK_NULL_HANDLE };
+        VkImage image{ VK_NULL_HANDLE };
+        VkImageView imageView{ VK_NULL_HANDLE };
+        VkSampler sampler{ VK_NULL_HANDLE };
     };
 }

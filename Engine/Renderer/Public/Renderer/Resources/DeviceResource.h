@@ -22,7 +22,7 @@ namespace Renderer
          */
         virtual ~DeviceResource() = default;
         
-        DeviceResource() = delete;
+        DeviceResource() = default;
         DeviceResource(const DeviceResource& other) = delete;
         DeviceResource(DeviceResource&& other) = default;
         DeviceResource& operator=(const DeviceResource& other) = delete;
@@ -31,9 +31,9 @@ namespace Renderer
         /*!
          @brief Returns read-only device object handler.
          */
-        [[nodiscard]] const DeviceObject& GetDeviceObject() { return mDeviceResource; }
+        [[nodiscard]] const DeviceObject& GetDeviceObject() const { return mDeviceResource; }
         
-    private:
+    protected:
         /*!
          @brief Device object handler.
          */

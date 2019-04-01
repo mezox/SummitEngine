@@ -133,7 +133,7 @@ namespace PAL::RenderAPI
         return "Unknow error";
     }
     
-    std::unique_ptr<VulkanRenderAPI> VulkanAPIServiceLocator::mService = nullptr;
+    std::unique_ptr<VulkanRenderAPI> VulkanAPI::mService = nullptr;
     
     VulkanRenderAPI::~VulkanRenderAPI()
     {

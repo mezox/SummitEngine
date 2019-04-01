@@ -6,6 +6,7 @@
 #   define VK_NO_PROTOTYPES
 #endif
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace Renderer
 {
@@ -46,5 +47,11 @@ namespace Renderer
         VkImageUsageFlags usage{ VK_IMAGE_USAGE_SAMPLED_BIT};
         VkMemoryPropertyFlags memoryProps;
         void* data{ nullptr };
+    };
+    
+    struct VulkanFramebufferDesc
+    {
+        std::vector<VkImageView> attachments;
+        VkRenderPass renderPass{ VK_NULL_HANDLE };
     };
 }

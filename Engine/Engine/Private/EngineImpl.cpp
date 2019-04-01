@@ -1,4 +1,6 @@
 #include <Engine/Engine.h>
+
+#include <Core/Templates.h>
 #include <Logging/LoggingService.h>
 #include <Logging/Logger.h>
 
@@ -43,7 +45,7 @@ SummitEngine::SummitEngine()
     LoggingServiceLocator::Provide(CreateLoggingService());
     Core::DispatcherService::Provide(CreateSummitDispatcher());
     
-    VulkanAPIServiceLocator::Provide(CreateVulkanRenderAPI());
+    VulkanAPI::Provide(CreateVulkanRenderAPI());
     Renderer::RendererLocator::Provide(CreateRenderer());
     
     MicroProfileOnThreadCreate("Main");
@@ -54,12 +56,13 @@ SummitEngine::SummitEngine()
 void SummitEngine::Initialize()
 {        
     LoggingServiceLocator::Service().Initialize();
-    VulkanAPIServiceLocator::Service().Initialize();
+    VulkanAPI::Service().Initialize();
     Renderer::RendererLocator::GetRenderer().Initialize();
 }
 
 void SummitEngine::StartFrame()
 {
+
 }
 
 void SummitEngine::Update()
@@ -83,6 +86,7 @@ void SummitEngine::Update()
 
 void SummitEngine::EndFrame()
 {
+    ScopedIncrement<uint32_t> frameId(mFrameId);
 }
 
 void SummitEngine::DeInitialize()

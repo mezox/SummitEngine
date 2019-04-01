@@ -34,7 +34,7 @@ Image::Image(const uint32_t w, const uint32_t h, const Format format, void* data
     samplerDesc.vAddressMode = AddressMode::Repeat;
     samplerDesc.wAddressMode = AddressMode::Repeat;
     
-    renderer.CreateTexture(imgDescriptor, samplerDesc, mGpuImage);
+    renderer.CreateTexture(imgDescriptor, samplerDesc, mDeviceResource);
 }
 
 Image Image::CreateFromFile(const std::string& path)

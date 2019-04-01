@@ -45,32 +45,45 @@ void VulkanSwapChain::Destroy()
 void VulkanSwapChain::SwapBuffers()
 {
     auto& renderer = (VulkanRenderer&)Renderer::RendererLocator::GetRenderer();
-    const auto& frameSync = renderer.GetFrameSyncData();
     
-    mDevice->WaitForFences(1, &frameSync.frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    if(mImageAvailableSemaphore == VK_NULL_HANDLE &&
+       mRenderFinishedSemaphore == VK_NULL_HANDLE &&
+       mFrameFence == VK_NULL_HANDLE)
+    {
+        VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        
+        mDevice->CreateSemaphore(&semaphoreInfo, nullptr, &mImageAvailableSemaphore);
+        mDevice->CreateSemaphore(&semaphoreInfo, nullptr, &mRenderFinishedSemaphore);
+        mDevice->CreateFence(&fenceInfo, nullptr, &mFrameFence);
+    }
     
     VulkanSwapChainVisitor visitor;
+    GetDeviceObject().Accept(visitor);
     
-    const auto& swapDeviceObject = GetDeviceObject();
-    swapDeviceObject.Accept(visitor);
-    
-    const auto status = mDevice->AcquireNextImageKHR(visitor.swapChain, std::numeric_limits<uint64_t>::max(), frameSync.imageAvailableSemaphore, VK_NULL_HANDLE, &mImageIndex);
-    
-    renderer.NewFrame(mImageIndex);
+    uint32_t imageIndex{ 0 };
+    const auto status = mDevice->AcquireNextImageKHR(visitor.swapChain, std::numeric_limits<uint64_t>::max(), mImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
     
     if(status != VK_SUCCESS)
     {
-//        LOG(Debug) << "Swap chain window resize";
-//        
-//        mDevice->WaitIdle();
-//        
-//        mDevice->DestroySwapchainKHR(mDeviceObject.swapChain, nullptr);
-//        
-//        mImageIndex = 0;
-//        
-//        Initialize(1400, 750);
+        //        LOG(Debug) << "Swap chain window resize";
+        //
+        //        mDevice->WaitIdle();
+        //
+        //        mDevice->DestroySwapchainKHR(mDeviceObject.swapChain, nullptr);
+        //
+        //        mImageIndex = 0;
+        //
+        //        Initialize(1400, 750);
         return;
     }
+    
+    
+    mDevice->WaitForFences(1, &mFrameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
     
     const auto& commandBuffers = renderer.GetCommandBuffers();
     
@@ -79,24 +92,24 @@ void VulkanSwapChain::SwapBuffers()
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &frameSync.imageAvailableSemaphore;
+    submitInfo.pWaitSemaphores = &mImageAvailableSemaphore;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[mImageIndex];
+    submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
     submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &frameSync.renderFinishedSemaphore;
+    submitInfo.pSignalSemaphores = &mRenderFinishedSemaphore;
     
-    mDevice->ResetFences(1, &frameSync.frameFence);
-    mDevice->QueueSubmit(mPresentQueue, 1, &submitInfo, frameSync.frameFence);
+    mDevice->ResetFences(1, &mFrameFence);
+    mDevice->QueueSubmit(mPresentQueue, 1, &submitInfo, mFrameFence);
     
     // Present
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &frameSync.renderFinishedSemaphore;
+    presentInfo.pWaitSemaphores = &mRenderFinishedSemaphore;
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &visitor.swapChain;
-    presentInfo.pImageIndices = &mImageIndex;
+    presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr; // Optional
     
     mDevice->QueuePresentKHR(mPresentQueue, &presentInfo);

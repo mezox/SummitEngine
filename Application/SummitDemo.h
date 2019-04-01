@@ -3,6 +3,7 @@
 #include <Engine/Application.h>
 #include <Renderer/Renderer.h>
 #include <Renderer/Resources/Buffer.h>
+#include <Renderer/Image.h>
 #include <Math/Matrix4.h>
 
 namespace Summit
@@ -44,5 +45,6 @@ namespace Demo
         Matrix4 mProjection;
         
         Renderer::Buffer mUniformBuffer;
+        std::unique_ptr<Renderer::Image> mTexture;
     };
 }

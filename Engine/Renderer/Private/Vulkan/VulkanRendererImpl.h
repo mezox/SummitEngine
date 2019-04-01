@@ -17,28 +17,6 @@ namespace Renderer
     
     struct VulkanImageDesc;
     
-    class VulkanFrameData
-    {
-    public:
-        std::vector<VkSemaphore> imageAvailableSemaphore;
-        std::vector<VkSemaphore> renderFinishedSemaphore;
-        std::vector<VkFence> frameFence;
-    };
-    
-    struct VulkanFramebufferDesc
-    {
-        std::vector<VkImageView> attachments{ VK_NULL_HANDLE };
-        VkRenderPass renderPass{ VK_NULL_HANDLE };
-    };
-    
-    struct FrameSyncData
-    {
-        VkSemaphore imageAvailableSemaphore{ VK_NULL_HANDLE };
-        VkSemaphore renderFinishedSemaphore{ VK_NULL_HANDLE };
-        VkFence frameFence{ VK_NULL_HANDLE };
-    };
-    
-    
 	class VulkanRenderer : public IRenderer
 	{
 	public:
@@ -54,6 +32,9 @@ namespace Renderer
         void CreateCommandBuffers(const Pipeline& pipeline, Object3D& object) override;
         void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) override;
         void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) override;
+        void CreateSemaphore(const SemaphoreDescriptor& desc, DeviceObject& semaphore) const override;
+        void CreateFence(const FenceDescriptor& desc, DeviceObject& fence) const override;
+        void CreateEvent(const EventDescriptor& desc, DeviceObject& event) const override;
         
         void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) override;
         
@@ -61,9 +42,6 @@ namespace Renderer
         
         const std::vector<VkCommandBuffer>& GetCommandBuffers() const { return mCommandBuffers; }
         const VkQueue GetGraphicsQueue() const { return mGraphicsQueue; }
-        
-        void NewFrame(uint32_t index) { mCurrentFrameId = index; }
-        const FrameSyncData GetFrameSyncData() const;
         
         VkImageView CreateImageView(const VkImage& image, const VkFormat& format, VkImageAspectFlags flags);
         
@@ -76,6 +54,10 @@ namespace Renderer
         void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
         void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
         void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+        
+        // Pipeline
+        std::vector<VkPipelineShaderStageCreateInfo> PrepareModules(Effect& effect) const;  // Non-const because it stores module device objects back to effect. This might not be needed & could be stored in some pipeline manager?
+        
         
     private:
         [[nodiscard]] BufferDeviceObject    CreateBufferImpl(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkSharingMode sharingMode) const;
@@ -91,20 +73,11 @@ namespace Renderer
         VkDescriptorPool mDescriptorPool;
         
         VkFormat mImgFormat{ VK_FORMAT_B8G8R8A8_UNORM };   //TODO: Initialize
-        size_t mCurrentFrameId{ 0 };
         VkQueue mGraphicsQueue{ VK_NULL_HANDLE };
         
         std::vector<DeviceObject*> mResourceManager;
         
         std::shared_ptr<CommandBufferFactory> mCommandBufferFactory;
-        
-        VulkanFrameData mFrameData;
-        
-        // Move to application
-        std::unique_ptr<Image> mTexture;
-        VkImage textureImage;
-        VkImageView textureImageView;
-        VkSampler textureSampler;
         
         // Depth
         RenderPass mDefaultRenderPass;

@@ -2,6 +2,8 @@
 
 #include <Renderer/VertexBuffer.h>
 #include <Renderer/Resources/Buffer.h>
+#include <Renderer/Image.h>
+#include <Renderer/Resources/Synchronization.h>
 #include <PAL/RenderAPI/VulkanAPI.h>
 #include <PAL/RenderAPI/VulkanDevice.h>
 #include <PAL/FileSystem/File.h>
@@ -25,6 +27,7 @@
 using namespace Renderer;
 using namespace Renderer::Vulkan;
 using namespace PAL::FileSystem;
+using namespace PAL::RenderAPI;
 
 namespace
 {
@@ -40,7 +43,7 @@ std::unique_ptr<IRenderer> Renderer::CreateRenderer()
 
 void VulkanRenderer::Initialize()
 {
-	const auto& vulkanAPI = PAL::RenderAPI::VulkanAPIServiceLocator::Service();
+	const auto& vulkanAPI = VulkanAPI::Service();
 
 	const auto instanceExt = vulkanAPI.EnumerateInstanceExtensionProperties();
 
@@ -83,26 +86,6 @@ void VulkanRenderer::Initialize()
     
     CreateRenderPass();
     
-    constexpr size_t MAX_FRAMES = 2;
-    
-    mFrameData.imageAvailableSemaphore.resize(MAX_FRAMES);
-    mFrameData.renderFinishedSemaphore.resize(MAX_FRAMES);
-    mFrameData.frameFence.resize(MAX_FRAMES);
-    
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // Create in signaled state for first frame
-    
-    for(size_t id{ 0 }; id < MAX_FRAMES; ++id)
-    {
-        mDevice->CreateSemaphore(&semaphoreInfo, nullptr, &mFrameData.imageAvailableSemaphore[id]);
-        mDevice->CreateSemaphore(&semaphoreInfo, nullptr, &mFrameData.renderFinishedSemaphore[id]);
-        mDevice->CreateFence(&fenceInfo, nullptr, &mFrameData.frameFence[id]);
-    }
-    
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = 0;
@@ -110,11 +93,7 @@ void VulkanRenderer::Initialize()
     
     mDevice->CreateCommandPool(&poolInfo, nullptr, &mCommandPool);
     
-    
     mCommandBufferFactory = std::make_shared<CommandBufferFactory>(mDevice, mCommandPool, mGraphicsQueue);
-    
-    // TODO: Application specific
-    mTexture = std::make_unique<Image>(Image::CreateFromFile("/Users/tomaskubovcik/Dev/SummitEngine/texture.jpg"));
     
     mImgFormat = VK_FORMAT_B8G8R8A8_UNORM;
 }
@@ -254,7 +233,7 @@ void Renderer::VulkanRenderer::Deinitialize()
 
 void VulkanRenderer::CreateDevice(DeviceType type)
 {
-	const auto& vulkanAPI = PAL::RenderAPI::VulkanAPIServiceLocator::Service();
+	const auto& vulkanAPI = VulkanAPI::Service();
 
 	const auto physicalDevices = vulkanAPI.EnumeratePhysicalDevices();
 	const auto& physicalDevice = physicalDevices.front();
@@ -295,7 +274,7 @@ void VulkanRenderer::CreateDevice(DeviceType type)
 
 void VulkanRenderer::CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, void* nativeHandle, uint32_t width, uint32_t height)
 {
-    const auto& vulkanAPI = PAL::RenderAPI::VulkanAPIServiceLocator::Service();
+    const auto& vulkanAPI = VulkanAPI::Service();
     const auto& physicalDevice = mDevice->GetPhysicalDevice();
     
     VkSurfaceKHR vulkanSurface{ VK_NULL_HANDLE };
@@ -423,36 +402,8 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     auto& effect = pipeline.effect;
     const auto& moduleDescriptors = effect.GetModuleDescriptors();
     
-    std::vector<VkPipelineShaderStageCreateInfo> stageInfos;
-    stageInfos.reserve(moduleDescriptors.size());
-    
-    // Setup stages
-    for(const auto& moduleDescriptor : moduleDescriptors)
-    {
-        File shaderFile(moduleDescriptor.filePath);
-        shaderFile.Open(EFileAccessMode::Read);
-        auto shaderSource = shaderFile.Read();
-        
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = shaderSource.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderSource.data());
-        
-        VkShaderModule module{ VK_NULL_HANDLE };
-        mDevice->CreateShaderModule(&createInfo, nullptr, &module);
-        
-        VkPipelineShaderStageCreateInfo shaderStageInfo{};
-        shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStageInfo.stage = ConvertType(moduleDescriptor.type);
-        shaderStageInfo.module = module;
-        shaderStageInfo.pName = "main";
-        
-        stageInfos.push_back(std::move(shaderStageInfo));
-        
-        DeviceObject moduleDeviceObject;
-        moduleDeviceObject = VulkanShaderDeviceObject(module);
-        effect.mModules.push_back(std::move(moduleDeviceObject));
-    }
+    // Prepare modules
+    const auto stageInfos = PrepareModules(effect);
     
     // Setup attributes
     const auto bindingCount = effect.GetBindingCount();
@@ -560,24 +511,27 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     descriptorSets.resize(SWAP_CHAIN_IMAGE_COUNT);           // Depends on swap chain images cnt
     mDevice->AllocateDescriptorSets(&allocInfo, descriptorSets.data());
     
-    BufferObjectVisitor bufferVisitor;
-    
     for (size_t i = 0; i < SWAP_CHAIN_IMAGE_COUNT; i++)          // Depends on swap chain images cnt
     {
         // TODO: Handle this generically
         const Buffer& mvpBuf = *effect.mUniformBuffers[0];
         
+        BufferObjectVisitor bufferVisitor;
         mvpBuf.deviceObject.Accept(bufferVisitor);
+        
+        const auto& texDeviceObject = effect.mTextures[0]->GetDeviceObject();
+        TextureVisitor textureVisitor;
+        texDeviceObject.Accept(textureVisitor);
         
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = bufferVisitor.buffer;
-        bufferInfo.offset = 0;
+        bufferInfo.offset = mvpBuf.offset;
         bufferInfo.range = mvpBuf.dataSize;
         
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = textureImageView;
-        imageInfo.sampler = textureSampler;
+        imageInfo.imageView = textureVisitor.imageView;
+        imageInfo.sampler = textureVisitor.sampler;
         
         std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -720,21 +674,11 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     mResourceManager.push_back(&pipeline.mDeviceObject);
 }
 
-const FrameSyncData VulkanRenderer::GetFrameSyncData() const
-{
-    FrameSyncData data;
-    data.imageAvailableSemaphore = mFrameData.imageAvailableSemaphore[mCurrentFrameId];
-    data.renderFinishedSemaphore = mFrameData.renderFinishedSemaphore[mCurrentFrameId];
-    data.frameFence = mFrameData.frameFence[mCurrentFrameId];
-    
-    return data;
-}
-
 uint32_t VulkanRenderer::FindMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
 {
     VkPhysicalDeviceMemoryProperties memProperties{ VK_NULL_HANDLE };
     
-    const auto& renderAPI = PAL::RenderAPI::VulkanAPIServiceLocator::Service();
+    const auto& renderAPI = VulkanAPI::Service();
     renderAPI.GetPhysicalDeviceMemoryProperties(mDevice->GetPhysicalDevice(), &memProperties);
     
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
@@ -954,11 +898,35 @@ void VulkanRenderer::CreateTexture(const ImageDesc& desc, const SamplerDesc& sam
         VkSampler sampler = CreateSamplerImpl(samplerDesc);
         
         texture = TextureDeviceObject(imageDeviceObject.image, imageView, imageDeviceObject.memory, sampler);
-        
-        textureImage = imageDeviceObject.image;
-        textureImageView = imageView;
-        textureSampler = sampler;
     }
+}
+
+void VulkanRenderer::CreateSemaphore(const SemaphoreDescriptor& desc, DeviceObject& semaphore) const
+{
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    
+    VkSemaphore smph{ VK_NULL_HANDLE };
+    mDevice->CreateSemaphore(&semaphoreInfo, nullptr, &smph);
+    
+    semaphore = SemaphoreDeviceObject{ smph };
+}
+
+void VulkanRenderer::CreateFence(const FenceDescriptor& desc, DeviceObject& fence) const
+{
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = desc.signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+    
+    VkFence f{ VK_NULL_HANDLE };
+    mDevice->CreateFence(&fenceInfo, nullptr, &f);
+    
+    fence = FenceDeviceObject{ f };
+}
+
+void VulkanRenderer::CreateEvent(const EventDescriptor& desc, DeviceObject& event) const
+{
+    throw std::runtime_error("Unimplemented!");
 }
 
 void VulkanRenderer::MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data)
@@ -1129,4 +1097,39 @@ void VulkanRenderer::TransitionImageLayout(VkImage image, VkFormat format, VkIma
     }
     
     cmdBuffer.PipelineBarrier(sourceStage, destinationStage, 0, {}, {}, { barrier });
+}
+
+std::vector<VkPipelineShaderStageCreateInfo> VulkanRenderer::PrepareModules(Effect& effect) const
+{
+    const auto& moduleDescriptors = effect.GetModuleDescriptors();
+    
+    std::vector<VkPipelineShaderStageCreateInfo> stageInfos;
+    stageInfos.reserve(moduleDescriptors.size());
+    
+    // Setup stages
+    for(const auto& moduleDescriptor : moduleDescriptors)
+    {
+        File shaderFile(moduleDescriptor.filePath);
+        shaderFile.Open(EFileAccessMode::Read);
+        auto shaderSource = shaderFile.Read();
+        
+        VkShaderModuleCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        createInfo.codeSize = shaderSource.size();
+        createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderSource.data());
+        
+        VkShaderModule module{ VK_NULL_HANDLE };
+        mDevice->CreateShaderModule(&createInfo, nullptr, &module);
+        
+        VkPipelineShaderStageCreateInfo shaderStageInfo{};
+        shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStageInfo.stage = ConvertType(moduleDescriptor.type);
+        shaderStageInfo.module = module;
+        shaderStageInfo.pName = "main";
+        
+        stageInfos.push_back(std::move(shaderStageInfo));
+        effect.mModules.push_back(Basify(VulkanShaderDeviceObject(module)));
+    }
+    
+    return stageInfos;
 }

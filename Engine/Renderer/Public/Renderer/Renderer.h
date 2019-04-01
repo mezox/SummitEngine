@@ -43,6 +43,9 @@ namespace Renderer
 	};
     
     class Pipeline;
+    struct SemaphoreDescriptor;
+    struct FenceDescriptor;
+    struct EventDescriptor;
 
 	class RENDERER_API IRenderer
 	{
@@ -61,6 +64,9 @@ namespace Renderer
         virtual void CreateImage(const ImageDesc& desc, DeviceObject& image) = 0;
         virtual void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) = 0;
         virtual void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) = 0;
+        virtual void CreateSemaphore(const SemaphoreDescriptor& desc, DeviceObject& semaphore) const = 0;
+        virtual void CreateFence(const FenceDescriptor& desc, DeviceObject& fence) const = 0;
+        virtual void CreateEvent(const EventDescriptor& desc, DeviceObject& event) const = 0;
         
         virtual void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) = 0;
 	};

@@ -20,6 +20,9 @@ namespace Renderer
     {
         class DescriptorSetLayoutDeviceObject;
         class DescriptorSetDeviceObject;
+        struct SemaphoreDeviceObject;
+        struct FenceDeviceObject;
+        struct EventDeviceObject;
     }
     
     class IDeviceObjectVisitor
@@ -35,6 +38,9 @@ namespace Renderer
         virtual void Visit(const VulkanSwapChainDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::DescriptorSetDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::SemaphoreDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::FenceDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::EventDeviceObject& object) = 0;
     };
     
     class IDeviceObjectImpl
@@ -86,18 +92,19 @@ namespace Renderer
     private:
         enum
         {
-            c_max_id_sizeof = 32,
+            c_max_id_sizeof_vtable = 40,
+            c_max_id_sizeof = c_max_id_sizeof_vtable - sizeof(IDeviceObjectImpl*),
             c_alignment = 8
         };
         
     private:
-        std::aligned_storage<c_max_id_sizeof>::type mStorage;
+        std::aligned_storage<c_max_id_sizeof_vtable>::type mStorage;
         IDeviceObjectImpl* mImpl{ nullptr };
     };
     
     template <typename T, typename F>
     DeviceObject& DeviceObject::operator=(T&& impl) noexcept
-    {
+    {        
         static_assert(sizeof(T) <= c_max_id_sizeof, "Object too big");
         mImpl->~IDeviceObjectImpl();
         mImpl = new (&mStorage) DeviceObjectImpl<std::decay_t<T>>(std::forward<T>(impl));

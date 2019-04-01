@@ -36,6 +36,9 @@ namespace Summit
         sigslot::signal<const FrameData&> LateUpdate;
         sigslot::signal<const FrameData&> Render;
         sigslot::signal<const FrameData&> UIRender;
+        
+    private:
+        uint32_t mFrameId{ 0 };
     };
 
     ENGINE_API std::shared_ptr<SummitEngine> CreateEngineService();

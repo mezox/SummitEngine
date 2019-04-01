@@ -37,7 +37,6 @@ namespace Renderer
         virtual void SwapBuffers() = 0;
 
     protected:
-        uint32_t mImageIndex{ 0 };
         std::vector<Framebuffer> mFramebuffers;
         std::shared_ptr<Attachment> mDepthAttachment;
     };

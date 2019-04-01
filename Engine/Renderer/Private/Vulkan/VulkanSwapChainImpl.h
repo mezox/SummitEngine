@@ -25,6 +25,9 @@ namespace Renderer
 
     private:
         std::shared_ptr<PAL::RenderAPI::VulkanDevice> mDevice;
+        VkSemaphore mImageAvailableSemaphore{ VK_NULL_HANDLE };
+        VkSemaphore mRenderFinishedSemaphore{ VK_NULL_HANDLE };
+        VkFence mFrameFence{ VK_NULL_HANDLE };
         VkQueue mPresentQueue{ VK_NULL_HANDLE };
     };
 }
