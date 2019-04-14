@@ -46,6 +46,7 @@ namespace Renderer
     struct SemaphoreDescriptor;
     struct FenceDescriptor;
     struct EventDescriptor;
+    struct RenderPassDescriptor;
 
 	class RENDERER_API IRenderer
 	{
@@ -55,20 +56,29 @@ namespace Renderer
 		virtual void Initialize() = 0;
 		virtual void Deinitialize() = 0;
 
-        virtual void CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, void* nativeHandle, uint32_t width, uint32_t height) = 0;
+        virtual DeviceObject CreateSurface(void* nativeViewHandle) const = 0;
+        virtual void CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, const DeviceObject& surface, uint32_t width, uint32_t height) = 0;
         virtual void CreateShader(DeviceObject& shader, const std::vector<uint8_t>& code) const = 0;
         virtual void CreatePipeline(Pipeline& pipeline) = 0;
-        virtual void CreateCommandBuffers(const Pipeline& pipeline, Object3D& object) = 0;
         virtual void CreateBuffer(const BufferDesc& desc, DeviceObject& buffer) = 0;
         virtual void CreateFramebuffer(const FramebufferDesc& desc, DeviceObject& framebuffer) = 0;
         virtual void CreateImage(const ImageDesc& desc, DeviceObject& image) = 0;
         virtual void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) = 0;
         virtual void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) = 0;
-        virtual void CreateSemaphore(const SemaphoreDescriptor& desc, DeviceObject& semaphore) const = 0;
-        virtual void CreateFence(const FenceDescriptor& desc, DeviceObject& fence) const = 0;
-        virtual void CreateEvent(const EventDescriptor& desc, DeviceObject& event) const = 0;
-        
+        virtual DeviceObject CreateSemaphore(const SemaphoreDescriptor& desc) const = 0;
+        virtual DeviceObject CreateFence(const FenceDescriptor& desc) const = 0;
+        virtual DeviceObject CreateEvent(const EventDescriptor& desc) const = 0;
         virtual void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) = 0;
+        virtual void UnmapMemory(const DeviceObject& deviceObject) const = 0;
+        virtual void CreateRenderPass(const RenderPassDescriptor& desc, DeviceObject& deviceObject) const = 0;
+        virtual void Render(const VertexBufferBase& vb, const Pipeline& pipeline) = 0;
+        virtual void RenderGui(const VertexBufferBase& vb, const Pipeline& pipeline) = 0;
+        
+        // Release
+        virtual void DestroyDeviceObject(DeviceObject& buffer) const = 0;
+        
+        virtual void BeginCommandRecording(SwapChainBase* swapChain) = 0;
+        virtual void EndCommandRecording(SwapChainBase* swapChain) = 0;
 	};
     
     RENDERER_API std::unique_ptr<IRenderer> CreateRenderer();

@@ -2,6 +2,18 @@
 
 #include <Engine/EngineBase.h>
 #include <Event/Signal.h>
+#include "Gui.h"
+#include <Renderer/View.h>
+
+#include <Renderer/DeviceObject.h>
+
+namespace Renderer
+{
+    class View;
+    class Object3D;
+    class IRenderer;
+    class SwapChainBase;
+}
 
 namespace Summit
 {
@@ -11,9 +23,24 @@ namespace Summit
     struct ENGINE_API FrameData
     {
         /*!
-         * @brief Time since last frame.
+         * @brief Time since last frame in miliseconds.
          */
         float deltaTime{ 0.0f };
+        
+        /*!
+         * @brief Current view width in pixels.
+         */
+        float width{ 0.0f };
+        
+        /*!
+         * @brief Current view height in pixels.
+         */
+        float height{ 0.0f };
+        
+        
+        uint32_t acquiredImageIndex{ 0 };
+        Renderer::DeviceObject imageAvailableSemaphore;
+        Renderer::DeviceObject renderFinishedSemaphore;
     };
     
     class ENGINE_API SummitEngine
@@ -23,12 +50,19 @@ namespace Summit
         ~SummitEngine() {}
         
         void Initialize();
+        void DeInitialize();
+        
+        void RenderObject(Renderer::Object3D& object, Renderer::Pipeline& pipeline);
+        void SetActiveSwapChain(Renderer::SwapChainBase* swapChain);
+        
+        void Run();
+        
+        void SetMainView(Renderer::View* view);
+        
+    private:
         void StartFrame();
         void Update();
         void EndFrame();
-        void DeInitialize();
-        
-        void Run();
         
     public:
         sigslot::signal<const FrameData&> EarlyUpdate;
@@ -39,11 +73,18 @@ namespace Summit
         
     private:
         uint32_t mFrameId{ 0 };
+        
+        Renderer::IRenderer* mRenderer{ nullptr };
+        Renderer::SwapChainBase* mActiveSwapChain{ nullptr };
+        
+        std::unique_ptr<UI::Gui> mGui;
+        
+        FrameData mFrameData;
     };
 
     ENGINE_API std::shared_ptr<SummitEngine> CreateEngineService();
 
-	class ENGINE_API EngineServiceLocator
+	class ENGINE_API EngineService
 	{
 	public:
 		static void Provide(std::shared_ptr<SummitEngine> service)
@@ -51,9 +92,14 @@ namespace Summit
 			mService = std::move(service);
 		}
 
-		static std::shared_ptr<SummitEngine> Service()
+		static SummitEngine& Get()
 		{
-			return mService;
+            if(!mService)
+            {
+                throw std::runtime_error("Attempt to get unitialized engine service!");
+            }
+            
+			return *mService;
 		}
 
 		static bool Available()

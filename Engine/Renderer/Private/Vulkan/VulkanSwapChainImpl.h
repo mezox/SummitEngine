@@ -15,19 +15,18 @@ namespace Renderer
 {
     class VulkanSwapChain : public SwapChainBase
     {
+        friend class VulkanRenderer;
+        
     public:
-        VulkanSwapChain(std::shared_ptr<PAL::RenderAPI::VulkanDevice>device, DeviceObject&& swapChain, const VkQueue& presentationQueue);
+        VulkanSwapChain(std::shared_ptr<PAL::RenderAPI::VulkanDevice>device, DeviceObject&& swapChain);
         virtual ~VulkanSwapChain();
 
         // SwapChainBase interface
         void Destroy() override;
         void SwapBuffers() override;
+        bool AcquireImage() override;
 
     private:
         std::shared_ptr<PAL::RenderAPI::VulkanDevice> mDevice;
-        VkSemaphore mImageAvailableSemaphore{ VK_NULL_HANDLE };
-        VkSemaphore mRenderFinishedSemaphore{ VK_NULL_HANDLE };
-        VkFence mFrameFence{ VK_NULL_HANDLE };
-        VkQueue mPresentQueue{ VK_NULL_HANDLE };
     };
 }

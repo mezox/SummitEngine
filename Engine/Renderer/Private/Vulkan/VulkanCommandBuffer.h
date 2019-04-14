@@ -1,6 +1,8 @@
 #pragma once
 
 #include <PAL/RenderAPI/VulkanDevice.h>
+#include <Renderer/Resources/DeviceResource.h>
+#include <Renderer/CommandBuffer.h>
 
 namespace Renderer
 {
@@ -60,7 +62,7 @@ namespace Renderer
         
         VulkanCommandBuffer CreateCommandBuffer()
         {
-            
+            return VulkanCommandBuffer(mDevice, mCommandPool);
         }
         
         ScopeCommandBuffer CreateScopeCommandBuffer()

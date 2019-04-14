@@ -16,6 +16,7 @@ include_directories(
 # Platform agnostic dependencies
 set(EXTERNAL_DEPENDENCIES
 	Microprofile
+    imgui
 )
 
 set(DEPENDENCIES
@@ -37,6 +38,9 @@ set(PUBLIC_SOURCES
     Public/Renderer/Layer.h
     Public/Renderer/Effect.h
     Public/Renderer/RenderPass.h
+    Public/Renderer/CommandBuffer.h
+
+    Public/Renderer/Input.h
 
     # resources
     Public/Renderer/Resources/DeviceResource.h
@@ -64,7 +68,12 @@ set(PRIVATE_SOURCES
     Private/Framebuffer.cpp
 	Private/SwapChainBase.cpp
     Private/RenderPass.cpp
+    Private/Command.h
+    Private/Command.cpp
 
+    Private/Input.cpp
+
+    Private/Vulkan/VulkanCommands.h
     Private/Vulkan/VulkanTypes.h
     Private/Vulkan/VulkanTypes.cpp
 

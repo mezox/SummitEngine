@@ -291,6 +291,13 @@ namespace PAL::RenderAPI
         vkUnmapMemory(mLogicalDevice, memory);
     }
     
+    VkResult VulkanDevice::FlushMappedMemoryRanges(uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges) const
+    {
+        const auto result = vkFlushMappedMemoryRanges(mLogicalDevice, memoryRangeCount, pMemoryRanges);
+        VK_CHECK_RESULT(result);
+        return result;
+    }
+    
     VkResult VulkanDevice::QueueWaitIdle(VkQueue queue) const
     {
         const auto result = vkQueueWaitIdle(queue);
@@ -345,6 +352,16 @@ namespace PAL::RenderAPI
         vkCmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
     }
     
+    void VulkanDevice::CmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const
+    {
+        vkCmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);
+    }
+    
+    void VulkanDevice::CmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const
+    {
+        vkCmdSetScissor(commandBuffer, firstScissor, scissorCount, pScissors);
+    }
+    
     VkResult VulkanDevice::CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const
     {
         const auto result = vkCreateDescriptorSetLayout(mLogicalDevice, pCreateInfo, pAllocator, pSetLayout);
@@ -387,6 +404,43 @@ namespace PAL::RenderAPI
         VK_CHECK_RESULT(result);
         return result;
     }
+    
+    // Managed handlers
+    ManagedHandle<VkSwapchainKHR> VulkanDevice::CreateManagedSwapchainKHR(const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator) const
+    {
+        VkSwapchainKHR swapChain{ VK_NULL_HANDLE };
+        CreateSwapchainKHR(pCreateInfo, pAllocator, &swapChain);
+        return ManagedHandle<VkSwapchainKHR>(swapChain, [devicePtr = shared_from_this()](const VkSwapchainKHR& swapchain) {
+            devicePtr->DestroySwapchainKHR(swapchain, nullptr);
+        });
+    }
+    
+    ManagedHandle<VkRenderPass> VulkanDevice::CreateManagedRenderPass(const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator) const
+    {
+        VkRenderPass renderPass{ VK_NULL_HANDLE };
+        CreateRenderPass(pCreateInfo, pAllocator, &renderPass);
+        return ManagedHandle<VkRenderPass>(renderPass, [devicePtr = shared_from_this()](const VkRenderPass& renderPass) {
+            devicePtr->DestroyRenderPass(renderPass, nullptr);
+        });
+    }
+    
+    ManagedHandle<VkSemaphore> VulkanDevice::CreateManagedSemaphore(const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator) const
+    {
+        VkSemaphore semaphore{ VK_NULL_HANDLE };
+        CreateSemaphore(pCreateInfo, pAllocator, &semaphore);
+        return ManagedHandle<VkSemaphore>(semaphore, [devicePtr = shared_from_this()](const VkSemaphore& semaphore) {
+            devicePtr->DestroySemaphore(semaphore, nullptr);
+        });
+    }
+    
+    ManagedHandle<VkFence> VulkanDevice::CreateManagedFence(const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator) const
+    {
+        VkFence fence{ VK_NULL_HANDLE };
+        CreateFence(pCreateInfo, pAllocator, &fence);
+        return ManagedHandle<VkFence>(fence, [devicePtr = shared_from_this()](const VkFence& fence) {
+            devicePtr->DestroyFence(fence, nullptr);
+        });
+    }
 
 	void VulkanDevice::LoadFunctions(PFN_vkGetDeviceProcAddr loadFunc)
 	{
@@ -428,6 +482,8 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdDrawIndexed);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdBindDescriptorSets);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdPipelineBarrier);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdSetViewport);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdSetScissor);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateDescriptorSetLayout);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyDescriptorSetLayout);
@@ -461,6 +517,7 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkMapMemory);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkFreeMemory);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkUnmapMemory);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkFlushMappedMemoryRanges);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateFence);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkWaitForFences);

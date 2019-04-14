@@ -9,6 +9,12 @@
 
 #include <exception>
 #include <vector>
+#include <mutex>
+
+namespace PAL::RenderAPI
+{
+    class VulkanDevice;
+}
 
 namespace PAL::RenderAPI
 {
@@ -29,8 +35,105 @@ namespace PAL::RenderAPI
         None = 0x00000000,
         AnisotropicFiltering = 0x00000001
     };
+    
+    template<typename T>
+    class MovableHandle
+    {
+    public:
+        MovableHandle() = default;
+        MovableHandle(const MovableHandle& other) = delete;
+        MovableHandle& operator=(const MovableHandle& other) = delete;
+        
+        MovableHandle(MovableHandle&& other)
+        {
+            mHandle = other.mHandle;
+            other.mHandle = VK_NULL_HANDLE;
+        }
+        
+        MovableHandle& operator=(MovableHandle&& other)
+        {
+            mHandle = other.mHandle;
+            other.mHandle = VK_NULL_HANDLE;
+            return *this;
+        }
+        
+        MovableHandle(T& directHandle)
+            : mHandle(directHandle)
+        {}
+        
+        MovableHandle(T&& directHandle)
+            : mHandle(std::move(directHandle))
+        {}
+        
+        const T& Get() const
+        {
+            return mHandle;
+        }
+        
+        T& Get()
+        {
+            return mHandle;
+        }
+        
+    private:
+        T mHandle{ VK_NULL_HANDLE };
+    };
+    
+    template<typename T>
+    class ManagedHandle
+    {
+    public:
+        using DeleterType = std::function<void(const T&)>;
+        
+    public:
+        ManagedHandle() = delete;
+        ManagedHandle(const ManagedHandle& other) = delete;
+        ManagedHandle operator=(const ManagedHandle& other) = delete;
+        
+        ManagedHandle(T& handle, DeleterType&& deleter)
+            : mHandle(handle)
+            , mDeleter(std::move(deleter))
+        {}
+        
+        ManagedHandle(ManagedHandle&& other)
+        {
+            mHandle = std::move(other.mHandle);
+            mDeleter = std::move(other.mDeleter);
+            other.mDeleter = nullptr;
+        }
+        
+        ManagedHandle& operator=(ManagedHandle&& other)
+        {
+            mHandle = std::move(other.mHandle);
+            mDeleter = std::move(other.mDeleter);
+            other.mDeleter = nullptr;
+            return *this;
+        }
+        
+        const T& Get() const
+        {
+            return mHandle.Get();
+        }
+        
+        T& Get()
+        {
+            return mHandle.Get();
+        }
+        
+        ~ManagedHandle()
+        {
+            if(mDeleter)
+            {
+                mDeleter(mHandle.Get());
+            }
+        }
+        
+    private:
+        MovableHandle<T> mHandle;
+        std::function<void(const T&)> mDeleter;
+    };
 
-	class RENDERAPI_API VulkanDevice
+    class RENDERAPI_API VulkanDevice : public std::enable_shared_from_this<VulkanDevice>
 	{
 	public:
 		explicit VulkanDevice(DeviceData& deviceData);
@@ -101,6 +204,7 @@ namespace PAL::RenderAPI
         void FreeMemory(VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator) const;
         VkResult MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) const;
         void UnmapMemory(VkDeviceMemory memory) const;
+        VkResult FlushMappedMemoryRanges(uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges) const;
         
         VkResult QueueWaitIdle(VkQueue queue) const;
         
@@ -116,6 +220,8 @@ namespace PAL::RenderAPI
         void CmdDrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const;
         void CmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) const;
         void CmdPipelineBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers) const;
+        void CmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const;
+        void CmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const;
         
         // Descriptors        
         VkResult CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const;
@@ -125,6 +231,11 @@ namespace PAL::RenderAPI
         VkResult AllocateDescriptorSets(const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) const;
         void UpdateDescriptorSets(uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) const;
         VkResult FreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets) const;
+        
+        [[nodiscard]] ManagedHandle<VkSwapchainKHR> CreateManagedSwapchainKHR(const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator) const;
+        [[nodiscard]] ManagedHandle<VkRenderPass> CreateManagedRenderPass(const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator) const;
+        [[nodiscard]] ManagedHandle<VkSemaphore> CreateManagedSemaphore(const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator) const;
+        [[nodiscard]] ManagedHandle<VkFence> CreateManagedFence(const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator) const;
 
 	private:
 		void LoadFunctions(PFN_vkGetDeviceProcAddr loadFunc);
@@ -168,6 +279,8 @@ namespace PAL::RenderAPI
         PFN_vkCmdCopyBuffer vkCmdCopyBuffer{ nullptr };
         PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage{ nullptr };
         PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier{ nullptr };
+        PFN_vkCmdSetViewport vkCmdSetViewport{ nullptr };
+        PFN_vkCmdSetScissor vkCmdSetScissor{ nullptr };
         
         PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets{ nullptr };
         PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer{ nullptr };
@@ -210,6 +323,7 @@ namespace PAL::RenderAPI
         PFN_vkFreeMemory vkFreeMemory{ nullptr };
         PFN_vkMapMemory vkMapMemory{ nullptr };
         PFN_vkUnmapMemory vkUnmapMemory{ nullptr };
+        PFN_vkFlushMappedMemoryRanges vkFlushMappedMemoryRanges{ nullptr };
         
         // Semaphores
         PFN_vkCreateSemaphore vkCreateSemaphore{ nullptr };

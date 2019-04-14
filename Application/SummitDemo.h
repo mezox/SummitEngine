@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Application.h>
+#include <Engine/Window.h>
 #include <Renderer/Renderer.h>
 #include <Renderer/Resources/Buffer.h>
 #include <Renderer/Image.h>
@@ -9,11 +10,6 @@
 namespace Summit
 {
     class SummitEngine;
-}
-
-namespace Application
-{
-    class Window;
 }
 
 namespace Demo
@@ -38,7 +34,7 @@ namespace Demo
     private:
         Renderer::Object3D triangle;
         Renderer::Pipeline pipeline;
-        Application::Window* window{ nullptr };
+        std::unique_ptr<Application::Window> mWindow;
         
         Matrix4 mModel;
         Matrix4 mView;
@@ -46,5 +42,7 @@ namespace Demo
         
         Renderer::Buffer mUniformBuffer;
         std::unique_ptr<Renderer::Image> mTexture;
+        
+        Summit::SummitEngine* mEngine{ nullptr };
     };
 }

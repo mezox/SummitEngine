@@ -9,11 +9,19 @@
 #import "AppDelegate.h"
 #import <AppKit/Appkit.h>
 
+#include <Logging/LoggingService.h>
 #include <Engine/Engine.h>
-#include <PAL/FileSystem/File.h>
-
-
 #include "SummitDemo.h"
+
+#ifdef LOG_MODULE_ID
+#   undef LOG_MODULE_ID
+#   define LOG_MODULE_ID LOG_MODULE_4BYTE('D','E','M','O')
+#endif
+
+#ifdef LOGGER_ID
+#   undef LOGGER_ID
+#   define LOGGER_ID "Application"
+#endif
 
 @interface AppDelegate ()
 {
@@ -24,10 +32,13 @@
 @implementation AppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {    
-    Summit::EngineServiceLocator::Provide(Summit::CreateEngineService());
+    Summit::EngineService::Provide(Summit::CreateEngineService());
     
-    auto& engine = *Summit::EngineServiceLocator::Service();
+    auto& engine = Summit::EngineService::Get();
     engine.Initialize();
+    
+    Logging::LoggingServiceLocator::Service().AddLogger(std::make_unique<Logging::Logger>(LOGGER_ID));
+    LOG(Information) << "SummitApp did finish launching!";
     
     demo = std::make_unique<Demo::SummitDemo>(engine);
     demo->PushToEngine(engine);
@@ -35,12 +46,14 @@
     engine.Run();
 }
 
-
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
     // Insert code here to tear down your application
-    
-    NSLog(@"Application will terminate!");
+    Summit::EngineService::Get().DeInitialize();
 }
 
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)application
+{
+    return YES;
+}
 
 @end

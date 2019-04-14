@@ -21,6 +21,8 @@ namespace Application
         sigslot::signal<const uint16_t, const uint16_t> WindowMoved;
     };
     
+    using HandleId = uint32_t;
+    
     class ENGINE_API Window : public WindowSignalsBase
     {
         class NativeWindow;
@@ -28,16 +30,17 @@ namespace Application
     public:
         Window(const std::string& title, const uint16_t width, const uint16_t height);
         virtual ~Window();
-
-		void Update();
         
         void SetTitle(const std::string& title);
+        HandleId CreateView(uint16_t w, uint16_t h, uint16_t x, uint16_t y);
+        
+        Renderer::View* GetView() const { return mView.get(); }
             
     private:
         uint16_t mWidth{ 1920 };
         uint16_t mHeight{ 1080 };
         
         std::unique_ptr<NativeWindow> mNativeWindow;
-        std::vector<std::unique_ptr<Renderer::View>> mViews;
+        std::unique_ptr<Renderer::View> mView;
     };
 }

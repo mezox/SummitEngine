@@ -12,6 +12,7 @@
 #include <microprofile/microprofile.h>
 
 #include <Renderer/Renderer.h>
+#include <Renderer/View.h>
 
 #include <Engine/Application.h>
 
@@ -31,7 +32,7 @@ using namespace Core;
 using namespace PAL::FileSystem;
 using namespace PAL::RenderAPI;
 
-std::shared_ptr<SummitEngine> EngineServiceLocator::mService = nullptr;
+std::shared_ptr<SummitEngine> EngineService::mService = nullptr;
 
 std::shared_ptr<SummitEngine> Summit::CreateEngineService()
 {
@@ -51,53 +52,83 @@ SummitEngine::SummitEngine()
     MicroProfileOnThreadCreate("Main");
     MicroProfileSetEnableAllGroups(true);
     MicroProfileSetForceMetaCounters(true);
+    
+    mRenderer = &RendererLocator::GetRenderer();
 }
 
 void SummitEngine::Initialize()
 {        
     LoggingServiceLocator::Service().Initialize();
     VulkanAPI::Service().Initialize();
-    Renderer::RendererLocator::GetRenderer().Initialize();
+    
+    mRenderer->Initialize();
 }
 
 void SummitEngine::StartFrame()
 {
-
+    mFrameData.deltaTime = 0.001f;
+    mFrameData.width = 1280.0f;
+    mFrameData.height = 720.0f;
+    
+    mGui->StartFrame(mFrameData);
 }
 
 void SummitEngine::Update()
 {
+    MicroProfileFlip(0);
+    StartFrame();
+    
+    // Begin update phase
     Updatee({});
     
-    MicroProfileFlip(0);
-//    MICROPROFILE_SCOPEI("SummitEngine", "Update", MP_GREEN3);
-//    for(int i = 0; i < 100000; i++)
-//    {
-//        int* a = new int(5);
-//        delete a;
-//    }
+    // --------- RENDER PHASE -------------
+    mActiveSwapChain->AcquireImage();
     
-//    for(auto window : mWindows)
-//    {
-//        window->Update();
-//        
-//    }
+    mRenderer->BeginCommandRecording(mActiveSwapChain);
+    mGui->FinishFrame();
+    
+    Render({});
+    
+    mRenderer->EndCommandRecording(mActiveSwapChain);
+    // --------- END OF RENDER PHASE -------------
+    
+    EndFrame();
 }
 
 void SummitEngine::EndFrame()
 {
     ScopedIncrement<uint32_t> frameId(mFrameId);
+    mActiveSwapChain->SwapBuffers();
 }
 
 void SummitEngine::DeInitialize()
 {
+    // Destroy default render pass
+    
     Renderer::RendererLocator::GetRenderer().Deinitialize();
-    Core::DispatcherService::Provide(nullptr);
+    //Core::DispatcherService::Provide(nullptr);
+    VulkanAPI::Service().DeInitialize();
     
     MicroProfileShutdown();
 }
 
+void SummitEngine::SetActiveSwapChain(Renderer::SwapChainBase* swapChain)
+{
+    mActiveSwapChain = swapChain;
+}
+
+void SummitEngine::RenderObject(Object3D& object, Renderer::Pipeline& pipeline)
+{
+    mRenderer->Render(object.mVertexBuffer, pipeline);
+    mRenderer->RenderGui(mGui->mVertexBuffer, mGui->mGuiPipeline);
+}
+
 void SummitEngine::Run()
 {
-    Core::DispatcherService::Service().Schedule(1000, [this]{ Update(); }, true);
+    Core::DispatcherService::Service().Schedule(10000, [this]{ Update(); }, true);
+}
+
+void SummitEngine::SetMainView(Renderer::View* view)
+{
+    mGui = std::make_unique<UI::Gui>(*view);
 }

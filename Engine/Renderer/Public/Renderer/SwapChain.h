@@ -25,19 +25,23 @@ namespace Renderer
         /*!
          @brief Swap chain destructor.
          */
-        virtual ~SwapChainBase() = default;
+        virtual ~SwapChainBase();
         
         SwapChainBase(SwapChainBase&& other) = delete;
         SwapChainBase& operator=(SwapChainBase&& other) = delete;
         
-        void AddFramebuffer(Framebuffer&& fb) { mFramebuffers.push_back(std::move(fb)); }
-        void SetDepthAttachment(std::shared_ptr<Attachment> depth) { mDepthAttachment = std::move(depth); }
+        void AddFramebuffer(Framebuffer&& fb);
+        void SetDepthAttachment(std::shared_ptr<Attachment> depth);
+        
+        const Framebuffer& GetActiveFramebuffer() const;
         
         virtual void Destroy() = 0;
         virtual void SwapBuffers() = 0;
+        virtual bool AcquireImage() = 0;
 
     protected:
         std::vector<Framebuffer> mFramebuffers;
         std::shared_ptr<Attachment> mDepthAttachment;
+        uint32_t mAcquiredImageIndex{ 0 };
     };
 }

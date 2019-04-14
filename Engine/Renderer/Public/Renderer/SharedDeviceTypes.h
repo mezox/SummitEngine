@@ -17,6 +17,7 @@ namespace Renderer
     enum class Format
     {
         Undefined,
+        R8,
         R8G8B8A8,
         R32G32F,
         R32G32B32F,
@@ -33,6 +34,7 @@ namespace Renderer
         switch (f)
         {
             case Format::Undefined: std::runtime_error("Requested size of undefined format!");
+            case Format::R8: return 1;
             case Format::R8G8B8A8: return 4;
             case Format::R32G32F: return 8;
             case Format::R32G32B32F: return 12;

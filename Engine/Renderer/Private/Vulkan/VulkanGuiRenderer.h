@@ -1,14 +1,19 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-
 namespace Renderer
-{
-    class VulkanImGui
+{    
+    namespace Vulkan
     {
-    public:
-        
-    public:
-        
-    };
+        class GuiRenderer
+        {
+        public:
+            GuiRenderer();
+            ~GuiRenderer();
+            
+            void Render();
+            
+        private:
+
+        };
+    }
 }

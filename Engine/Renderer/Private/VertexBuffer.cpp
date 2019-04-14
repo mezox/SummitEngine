@@ -17,6 +17,16 @@ const bool VertexBufferStreamBase::IsCommited() const
     return mIsCommited;
 }
 
+uint32_t VertexBufferStreamBase::GetStride() const
+{
+    return mStreamData.stride;
+}
+
+uint32_t VertexBufferStreamBase::GetCount() const
+{
+    return mStreamData.count;
+}
+
 VertexDataInputRate VertexBufferStreamBase::GetVertexInputRate() const
 {
     return mInputRate;
@@ -37,18 +47,28 @@ const DeviceObject& VertexBufferStreamBase::GetDeviceResourcePtr() const
     return mGpuBuffer;
 }
 
-bool VertexBufferStreamBase::Commit(CommitCommand)
+bool VertexBufferStreamBase::Commit(CommitCommand cmd)
 {
     auto& renderer = RendererLocator::GetRenderer();
     
     BufferDesc descriptorPosition;
     descriptorPosition.usage = mDataType;
-    descriptorPosition.memoryUsage = MemoryType::DeviceLocal;
+    descriptorPosition.memoryUsage = (cmd == CommitCommand::Commit) ? MemoryType::DeviceLocal : MemoryType::HostVisible;
     descriptorPosition.bufferSize = mStreamData.count * mStreamData.stride;
     descriptorPosition.data = mStreamData.data;
     
     renderer.CreateBuffer(descriptorPosition, mGpuBuffer);
     mIsCommited = true;
+    mMemoryType = descriptorPosition.memoryUsage;
     
     return mIsCommited;
+}
+
+void VertexBufferStreamBase::InvalidateStream()
+{
+    if(mIsCommited)
+    {
+        mStreamData = {};
+        RendererLocator::GetRenderer().DestroyDeviceObject(mGpuBuffer);
+    }
 }

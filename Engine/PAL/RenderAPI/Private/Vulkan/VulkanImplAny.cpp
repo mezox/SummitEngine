@@ -220,6 +220,7 @@ namespace PAL::RenderAPI
             mEnabledInstanceExtensions.clear();
             mEnabledInstanceValidationLayers.clear();
             
+            vkDestroyDebugUtilsMessengerEXT(mInstance, mCallback, nullptr);
             vkDestroyInstance(mInstance, nullptr);
             PlatformDeinitialize();
 

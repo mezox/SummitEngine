@@ -46,6 +46,7 @@ auto TypeLinkerTempl<Renderer::Format, VkFormat>::operator()(const from_t& image
     switch(imageType)
     {
         case Renderer::Format::Undefined: return to_t{ VK_FORMAT_UNDEFINED };
+        case Renderer::Format::R8: return to_t{ VK_FORMAT_R8_UNORM };
         case Renderer::Format::R8G8B8A8: return to_t{ VK_FORMAT_R8G8B8A8_UNORM };
         case Renderer::Format::R32G32F: return to_t{ VK_FORMAT_R32G32_SFLOAT };
         case Renderer::Format::R32G32B32F: return to_t{ VK_FORMAT_R32G32B32_SFLOAT };

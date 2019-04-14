@@ -7,11 +7,10 @@ using namespace Renderer;
 
 @implementation SummitWindowDelegate
 
-- (instancetype)initWithWindow:(NSWindow*)window signals:(Application::WindowSignalsBase*)winsig
+- (instancetype)initWithWindow:(NSWindow*)window
 {
     self = [super init];
     self->window = window;
-    self->signals = winsig;
     
     return self;
 }
@@ -28,20 +27,16 @@ using namespace Renderer;
 
 - (void)windowDidResize:(NSNotification *)notification
 {
-    NSRect rect = [window.contentView frame];
-    
-    Core::DispatcherService::Service().Post([self, &rect](){
-        signals->WindowResized(rect.size.width, rect.size.height);
-    });
+//    NSRect rect = [window.contentView frame];
+//    
+//    Core::DispatcherService::Service().Post([self, &rect](){
+//        signals->WindowResized(rect.size.width, rect.size.height);
+//    });
 }
 
 - (void)windowDidMove:(NSNotification *)notification
 {
-    NSRect rect = [window frame];
-    
-    Core::DispatcherService::Service().Post([self, &rect](){
-        signals->WindowMoved(rect.origin.x , rect.origin.y);
-    });
+
 }
 
 - (void)windowDidMiniaturize:(NSNotification *)notification

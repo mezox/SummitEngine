@@ -1,11 +1,18 @@
 #pragma once
 
 #include <PAL/RenderAPI/VulkanAPI.h>
+#include <PAL/RenderAPI/VulkanDevice.h>
+#include <Core/Assert.h>
+
+#include <array>
 
 namespace Renderer
 {
     namespace Vulkan
     {
+        template<typename T>
+        using PerFrameData = std::array<T, 3>;
+        
         class DescriptorSetLayoutDeviceObject
         {
         public:
@@ -37,6 +44,36 @@ namespace Renderer
         {
             VkSemaphore semaphore{ VK_NULL_HANDLE };
         };
+        
+        struct RenderPassDeviceObject
+        {
+            PAL::RenderAPI::ManagedHandle<VkRenderPass> renderPass;
+        };
+        
+        struct CommandBufferDeviceObject
+        {
+            VkCommandBuffer commandBuffer;
+        };
+        
+        struct FrameSyncDeviceObject
+        {
+            PAL::RenderAPI::ManagedHandle<VkSemaphore> imageAvailableSemaphore;
+            PAL::RenderAPI::ManagedHandle<VkSemaphore> renderFinishedSemaphore;
+            PAL::RenderAPI::ManagedHandle<VkFence> frameFence;
+        };
+        
+        struct SwapChainDeviceObject
+        {
+            PAL::RenderAPI::MovableHandle<VkSwapchainKHR> swapChain;
+            PAL::RenderAPI::ManagedHandle<VkSemaphore> imageAvailableSemaphore;
+            PAL::RenderAPI::ManagedHandle<VkSemaphore> renderFinishedSemaphore;
+            PAL::RenderAPI::ManagedHandle<VkFence> frameFence;
+        };
+        
+        struct SurfaceDeviceObject
+        {
+            PAL::RenderAPI::MovableHandle<VkSurfaceKHR> surface;
+        };
     }
     
     class VulkanShaderDeviceObject
@@ -46,15 +83,6 @@ namespace Renderer
         
     public:
         VkShaderModule module{ VK_NULL_HANDLE };
-    };
-    
-    class VulkanRenderPassDeviceObject
-    {
-    public:
-        VulkanRenderPassDeviceObject(const VkRenderPass& rp) : renderPass(rp) {}
-        
-    public:
-        VkRenderPass renderPass{ VK_NULL_HANDLE };
     };
     
     class PipelineDeviceObject
@@ -85,6 +113,7 @@ namespace Renderer
     public:
         VkBuffer buffer{ VK_NULL_HANDLE };
         VkDeviceMemory memory{ VK_NULL_HANDLE };
+        void* mappedMemory{ nullptr };
     };
     
     class ImageDeviceObject
@@ -138,19 +167,6 @@ namespace Renderer
         VkImage image{ VK_NULL_HANDLE };
     };
     
-    class VulkanSwapChainDeviceObject
-    {
-    public:
-        VulkanSwapChainDeviceObject(const VkSwapchainKHR& sc, const VkSurfaceKHR& surface)
-            : swapChain(sc)
-            , surface(surface)
-        {}
-        
-    public:
-        VkSwapchainKHR swapChain{ VK_NULL_HANDLE };
-        VkSurfaceKHR surface{ VK_NULL_HANDLE };
-    };
-    
     class DeviceObjectVisitorBase : public IDeviceObjectVisitor
     {
     public:
@@ -161,12 +177,38 @@ namespace Renderer
         void Visit(const FramebufferDeviceObject& object) override {}
         void Visit(const TextureDeviceObject& object) override {}
         void Visit(const VulkanAttachmentDeviceObject& object) override {}
-        void Visit(const VulkanSwapChainDeviceObject& object) override {}
+        void Visit(const Vulkan::SurfaceDeviceObject& object) override {}
+        void Visit(const Vulkan::SwapChainDeviceObject& object) override {}
         void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
         void Visit(const Vulkan::DescriptorSetDeviceObject& object) override{}
         void Visit(const Vulkan::SemaphoreDeviceObject& object) override{}
         void Visit(const Vulkan::FenceDeviceObject& object) override{}
         void Visit(const Vulkan::EventDeviceObject& object) override{}
+        void Visit(const Vulkan::RenderPassDeviceObject& object) override{}
+        void Visit(const Vulkan::CommandBufferDeviceObject& object) override{}
+        void Visit(const Vulkan::FrameSyncDeviceObject& object) override{}
+    };
+    
+    class MutableDeviceObjectVisitorBase : public IMutableDeviceObjectVisitor
+    {
+    public:
+        void Visit(VulkanShaderDeviceObject& object) override {}
+        void Visit(VulkanRenderPassDeviceObject& object) override {}
+        void Visit(PipelineDeviceObject& object) override {}
+        void Visit(BufferDeviceObject& object) override {}
+        void Visit(FramebufferDeviceObject& object) override {}
+        void Visit(TextureDeviceObject& object) override {}
+        void Visit(VulkanAttachmentDeviceObject& object) override {}
+        void Visit(Vulkan::SurfaceDeviceObject& object) override {}
+        void Visit(Vulkan::SwapChainDeviceObject& object) override {}
+        void Visit(Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
+        void Visit(Vulkan::DescriptorSetDeviceObject& object) override{}
+        void Visit(Vulkan::SemaphoreDeviceObject& object) override{}
+        void Visit(Vulkan::FenceDeviceObject& object) override{}
+        void Visit(Vulkan::EventDeviceObject& object) override{}
+        void Visit(Vulkan::RenderPassDeviceObject& object) override{}
+        void Visit(Vulkan::CommandBufferDeviceObject& object) override{}
+        void Visit(Vulkan::FrameSyncDeviceObject& object) override{}
     };
     
     class DeviceObjectCounterVisitorBase : public IDeviceObjectVisitor
@@ -179,12 +221,16 @@ namespace Renderer
         void Visit(const FramebufferDeviceObject& object) override { ++images; ++imageViews; ++framebuffers; }
         void Visit(const TextureDeviceObject& object) override {}
         void Visit(const VulkanAttachmentDeviceObject& object) override {}
-        void Visit(const VulkanSwapChainDeviceObject& object) override {}
+        void Visit(const Vulkan::SurfaceDeviceObject& object) override {}
+        void Visit(const Vulkan::SwapChainDeviceObject& object) override {}
         void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
         void Visit(const Vulkan::DescriptorSetDeviceObject& object) override {}
         void Visit(const Vulkan::SemaphoreDeviceObject& object) override{}
         void Visit(const Vulkan::FenceDeviceObject& object) override{}
         void Visit(const Vulkan::EventDeviceObject& object) override{}
+        void Visit(const Vulkan::RenderPassDeviceObject& object) override{}
+        void Visit(const Vulkan::CommandBufferDeviceObject& object) override{}
+        void Visit(const Vulkan::FrameSyncDeviceObject& object) override{}
         
     public:
         uint16_t buffers{ 0 };
@@ -192,6 +238,18 @@ namespace Renderer
         uint16_t images{ 0 };
         uint16_t imageViews{ 0 };
         uint16_t framebuffers{ 0 };
+    };
+    
+    class SurfaceVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const Vulkan::SurfaceDeviceObject& object) override
+        {
+            surface = object.surface.Get();
+        }
+        
+    public:
+        VkSurfaceKHR surface{ VK_NULL_HANDLE };
     };
     
     class PipelineObjectVisitor : public DeviceObjectVisitorBase
@@ -222,6 +280,18 @@ namespace Renderer
         VkDeviceMemory memory{ VK_NULL_HANDLE };
     };
     
+    class RenderPassVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const Vulkan::RenderPassDeviceObject& object) override
+        {
+            renderPass = object.renderPass.Get();
+        }
+        
+    public:
+        VkRenderPass renderPass{ VK_NULL_HANDLE };;
+    };
+    
     class FramebufferObjectVisitor : public DeviceObjectVisitorBase
     {
     public:
@@ -241,15 +311,19 @@ namespace Renderer
     class VulkanSwapChainVisitor : public DeviceObjectVisitorBase
     {
     public:
-        void Visit(const VulkanSwapChainDeviceObject& object) override
+        void Visit(const Vulkan::SwapChainDeviceObject& object) override
         {
-            swapChain = object.swapChain;
-            surface = object.surface;
+            swapChain = object.swapChain.Get();
+            imgAvailableSemaphore = object.imageAvailableSemaphore.Get();
+            renderFinishedSemaphore = object.renderFinishedSemaphore.Get();
+            frameFence = object.frameFence.Get();
         }
         
     public:
         VkSwapchainKHR swapChain{ VK_NULL_HANDLE };
-        VkSurfaceKHR surface{ VK_NULL_HANDLE };
+        VkSemaphore imgAvailableSemaphore{ VK_NULL_HANDLE };
+        VkSemaphore renderFinishedSemaphore{ VK_NULL_HANDLE };
+        VkFence frameFence{ VK_NULL_HANDLE };
     };
     
     class DescriptorSetVisitor : public DeviceObjectVisitorBase
@@ -309,5 +383,87 @@ namespace Renderer
         VkImage image{ VK_NULL_HANDLE };
         VkImageView imageView{ VK_NULL_HANDLE };
         VkSampler sampler{ VK_NULL_HANDLE };
+    };
+    
+    class CommandBufferVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const Vulkan::CommandBufferDeviceObject& object) override
+        {
+            commandBuffer = object.commandBuffer;
+        }
+        
+    public:
+        VkCommandBuffer commandBuffer{ VK_NULL_HANDLE };
+    };
+    
+    class FrameSyncVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const Vulkan::FrameSyncDeviceObject& object) override
+        {
+            imgAvailableSemaphore = object.imageAvailableSemaphore.Get();
+            renderFinishedSemaphore = object.renderFinishedSemaphore.Get();
+            frameFence = object.frameFence.Get();
+        }
+        
+    public:
+        VkSemaphore imgAvailableSemaphore;
+        VkSemaphore renderFinishedSemaphore;
+        VkFence frameFence;
+    };
+    
+    class DestroyVisitor : public MutableDeviceObjectVisitorBase
+    {
+    public:
+        explicit DestroyVisitor(std::shared_ptr<PAL::RenderAPI::VulkanDevice> device)
+            : mDevice(std::move(device))
+        {}
+        
+        void Visit(BufferDeviceObject& object) override
+        {
+            _ASSERT(object.buffer != VK_NULL_HANDLE);
+            _ASSERT(object.memory != VK_NULL_HANDLE);
+            
+            if(object.mappedMemory)
+            {
+                mDevice->UnmapMemory(object.memory);
+            }
+            
+            mDevice->DestroyBuffer(object.buffer, nullptr);
+            mDevice->FreeMemory(object.memory, nullptr);
+            
+            object.buffer = VK_NULL_HANDLE;
+            object.memory = VK_NULL_HANDLE;
+            object.mappedMemory = nullptr;
+        }
+        
+        void Visit(VulkanAttachmentDeviceObject& object) override
+        {
+            _ASSERT(object.image != VK_NULL_HANDLE);
+            _ASSERT(object.view != VK_NULL_HANDLE);
+            _ASSERT(object.memory != VK_NULL_HANDLE);
+            
+            mDevice->DestroyImage(object.image, nullptr);
+            mDevice->DestroyImageView(object.view, nullptr);
+            mDevice->FreeMemory(object.memory, nullptr);
+            
+            object.image = VK_NULL_HANDLE;
+            object.view = VK_NULL_HANDLE;
+            object.memory = VK_NULL_HANDLE;
+        }
+        
+        void Visit(Vulkan::SwapChainDeviceObject& object) override
+        {
+            auto& swapChainHandle = object.swapChain.Get();
+            
+            _ASSERT(swapChainHandle != VK_NULL_HANDLE);
+            
+            mDevice->DestroySwapchainKHR(swapChainHandle, nullptr);
+            swapChainHandle = VK_NULL_HANDLE;
+        }
+        
+    private:
+        std::shared_ptr<PAL::RenderAPI::VulkanDevice> mDevice;
     };
 }

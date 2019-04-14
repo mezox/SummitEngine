@@ -19,6 +19,12 @@ namespace Core
     {
     }
     
+    SummitDispatcher::~SummitDispatcher()
+    {
+        mIsRunning = false;
+        mThread.join();
+    }
+    
     uint32_t SummitDispatcher::Schedule(uint32_t deltaTime, std::function<void()>&& f, bool repeat)
     {
         if(!mIsRunning)
@@ -49,8 +55,15 @@ namespace Core
     
     void SummitDispatcher::Worker()
     {
+        uint32_t mCnt{ 0 };
+        
         while(mIsRunning)
         {
+            mCnt++;
+            
+            if(mQueue.Size() > 0)
+                LOG(Debug) << "Queue Size: " << mQueue.Size();
+            
             auto funcPtr = mQueue.Pop();
             if(funcPtr)
             {
@@ -58,9 +71,11 @@ namespace Core
                 func();
             }
             
-            mFunc();
-            
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            if(mCnt % 1000000 == 0)
+            {
+                mFunc();
+                mCnt = 0;
+            }
         }
     }
 }

@@ -11,4 +11,10 @@ namespace Renderer
     {
         bool signaled{ false };
     };
+    
+    // TODO: Move elesewhere
+    struct RenderPassDescriptor
+    {
+        
+    };
 }

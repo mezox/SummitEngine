@@ -38,7 +38,9 @@ namespace Renderer
     enum class CommitCommand
     {
         Commit,
+        Map,
         CommitDiscard,
+        MapAndDiscard,
         Discard
     };
     
@@ -58,19 +60,26 @@ namespace Renderer
         const bool IsDiscarded() const;
         const bool IsCommited() const;
         
+        uint32_t GetStride() const;
+        uint32_t GetCount() const;
+        
         VertexDataInputRate GetVertexInputRate() const;
         BufferUsage GetDataType() const;
         
         DeviceObject& GetDeviceResource();
         const DeviceObject& GetDeviceResourcePtr() const;
         
-        bool Commit(CommitCommand);
+        bool Commit(CommitCommand cmd);
+        
+    protected:
+        void InvalidateStream();
         
     protected:
         DeviceObject mGpuBuffer;
         StreamData mStreamData;
         bool mIsCommited{ false };
         bool mIsDiscarded{ false };
+        MemoryType mMemoryType;
         VertexDataInputRate mInputRate{ VertexDataInputRate::Vertex };
         BufferUsage mDataType{ BufferUsage::VertexBuffer };
     };
@@ -126,6 +135,12 @@ namespace Renderer
             {
                 Discard();
             }
+        }
+        
+        void Invalidate()
+        {
+            Discard();
+            InvalidateStream();
         }
         
     private:
@@ -219,7 +234,7 @@ namespace Renderer
     {
     public:
         VertexBufferStream<PositionType>& GetPositionDataStream()
-        {
+        {            
             if(!mStreams[0])
             {
                 mStreams[0] = std::make_unique<VertexBufferStream<PositionType>>(BufferUsage::VertexBuffer);

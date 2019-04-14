@@ -28,6 +28,7 @@ set(DEPENDENCIES
 # platform agnostic source files
 set(PRIVATE_SOURCES
 	Private/EngineImpl.cpp
+	Private/Gui.cpp
 )
 
 set(PUBLIC_SOURCES
@@ -35,6 +36,7 @@ set(PUBLIC_SOURCES
 	Public/Engine/Engine.h
     Public/Engine/Window.h
     Public/Engine/WindowEvent.h
+    Public/Engine/Gui.h
 )
 
 # platform dependant settings

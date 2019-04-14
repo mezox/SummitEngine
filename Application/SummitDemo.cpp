@@ -1,6 +1,5 @@
 #include "SummitDemo.h"
 
-#include <Logging/LoggingService.h>
 #include <Engine/Engine.h>
 #include <Engine/Window.h>
 #include <Renderer/View.h>
@@ -11,25 +10,17 @@
 using namespace Demo;
 using namespace Summit;
 using namespace Renderer;
-
-#ifdef LOG_MODULE_ID
-#undef LOG_MODULE_ID
-#endif
-
-#ifdef LOGGER_ID
-#undef LOGGER_ID
-#define LOGGER_ID "Application"
-#endif
+using namespace Application;
 
 #define LOG_MODULE_ID LOG_MODULE_4BYTE(' ','A','P','P')
 
 SummitDemo::SummitDemo(SummitEngine& engine)
 {
-    Logging::LoggingServiceLocator::Service().AddLogger(std::make_unique<Logging::Logger>(LOGGER_ID));
-    LOG(Information) << "SummitApp did finish launching!";
+    mEngine = &engine;
     
-    window = new Application::Window("SummitEngine", 1280, 720);
-    window->SetTitle("SummitEngineApplication");
+    mWindow = std::make_unique<Window>("SummitEngine", 1280, 720);
+    mWindow->CreateView(1280, 720, 0, 0);
+    //mWindow->CreateView(640, 720, 640, 0);
     
     auto& positionStream = triangle.mVertexBuffer.GetPositionDataStream();
     auto& colorStream = triangle.mVertexBuffer.GetColorDataStream();
@@ -108,8 +99,6 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     
     pipeline.Create();
     
-    renderer.CreateCommandBuffers(pipeline, triangle);
-    
     Matrix4 m;
     m.MakeIdentity();
     
@@ -125,6 +114,8 @@ void SummitDemo::PushToEngine(SummitEngine& engine)
     mLateUpdateConnection = engine.LateUpdate.connect(&Demo::SummitDemo::OnLateUpdate, this);
     mRenderConnection = engine.Render.connect(&Demo::SummitDemo::OnRender, this);
     mUIRenderConnection = engine.UIRender.connect(&Demo::SummitDemo::OnUIRender, this);
+    
+    engine.SetMainView(mWindow->GetView());
 }
 
 void SummitDemo::PopFromEngine(SummitEngine& engine)
@@ -143,23 +134,12 @@ void SummitDemo::UpdateCamera()
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     
-    struct MVP
-    {
-        Matrix4 model;
-        Matrix4 view;
-        Matrix4 projection;
-    };
-    
-    MVP mvp;
-    mvp.view.MakeIdentity();
-    mvp.view.Translate(0.0f, 1.0f, -2.0f);
-    mvp.view.RotateX(Math::DegreesToRadians(-60.0f));
-    mvp.model.MakeIdentity();
-    mvp.model.RotateY(time * Math::DegreesToRadians(40.0f));
-    mvp.projection = Matrix4::MakePerspective(Math::DegreesToRadians(60.0f), 1280/720.f, 0.1f, 10.0f); //Matrix4::MakeOrtho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
-
-    auto& renderer = Renderer::RendererLocator::GetRenderer();
-    renderer.MapMemory(mUniformBuffer.deviceObject, mUniformBuffer.dataSize, &mvp);
+    mView.MakeIdentity();
+    mView.Translate(0.0f, 1.0f, -2.0f);
+    mView.RotateX(Math::DegreesToRadians(-60.0f));
+    mModel.MakeIdentity();
+    mModel.RotateY(time * Math::DegreesToRadians(40.0f));
+    mProjection = Matrix4::MakePerspective(Math::DegreesToRadians(60.0f), 1400/900.f, 0.1f, 10.0f); //Matrix4::MakeOrtho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 }
 
 void SummitDemo::OnEarlyUpdate(const FrameData& data)
@@ -170,7 +150,8 @@ void SummitDemo::OnEarlyUpdate(const FrameData& data)
 void SummitDemo::OnUpdate(const FrameData& data)
 {
     UpdateCamera();
-    window->Update();
+    
+    mEngine->SetActiveSwapChain(mWindow->GetView()->GetSwapChain());
 }
 
 void SummitDemo::OnLateUpdate(const FrameData& data)
@@ -180,10 +161,26 @@ void SummitDemo::OnLateUpdate(const FrameData& data)
 
 void SummitDemo::OnRender(const FrameData& data)
 {
+    auto& renderer = RendererLocator::GetRenderer();
     
+    struct MVP
+    {
+        Matrix4 model;
+        Matrix4 view;
+        Matrix4 projection;
+    };
+    
+    // TODO move MVP struct to class as member, this is unnecesary copy every frame I know
+    MVP mvp;
+    mvp.model = mModel;
+    mvp.view = mView;
+    mvp.projection = mProjection;
+    
+    renderer.MapMemory(mUniformBuffer.deviceObject, mUniformBuffer.dataSize, &mvp);
+    
+    mEngine->RenderObject(triangle, pipeline);
 }
 
 void SummitDemo::OnUIRender(const FrameData& data)
 {
-    
 }

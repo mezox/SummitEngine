@@ -15,6 +15,11 @@ namespace Renderer
         {
             throw std::invalid_argument("Bad function call");
         }
+        
+        void Accept(IMutableDeviceObjectVisitor& visitor) override
+        {
+            throw std::invalid_argument("Bad function call");
+        }
     };
 }
 
@@ -39,6 +44,11 @@ DeviceObject& DeviceObject::operator=(DeviceObject&& other) noexcept
 }
 
 void DeviceObject::Accept(IDeviceObjectVisitor& visitor) const
+{
+    mImpl->Accept(visitor);
+}
+
+void DeviceObject::Accept(IMutableDeviceObjectVisitor& visitor)
 {
     mImpl->Accept(visitor);
 }

@@ -33,6 +33,9 @@ namespace Renderer
          */
         [[nodiscard]] const DeviceObject& GetDeviceObject() const { return mDeviceResource; }
         
+        
+        [[nodiscard]] DeviceObject& GetDeviceObject() { return mDeviceResource; }
+        
     protected:
         /*!
          @brief Device object handler.

@@ -1,27 +1,33 @@
 #include <Renderer/View.h>
 #include <Renderer/Renderer.h>
-#include "Vulkan/VulkanSwapChainImpl.h"
+#include <Renderer/SwapChain.h>
 
 #include <Logging/LoggingService.h>
 
 using namespace Renderer;
+using namespace PAL::RenderAPI;
 
 View::View(uint16_t width, uint16_t height, void* nativeView)
-    : mNativeViewHandle(nativeView)
+    : DeviceResource(RendererLocator::GetRenderer().CreateSurface(nativeView))
+    , mNativeViewHandle(nativeView)
 {
-    RendererLocator::GetRenderer().CreateSwapChain(mSwapChain, nativeView, width, height);
+    RendererLocator::GetRenderer().CreateSwapChain(mSwapChain, GetDeviceObject(), width, height);
 }
 
 View::~View()
 {
+    // Destroy surface
 }
 
-void View::Update()
+void View::OnResize(uint16_t width, uint16_t height)
 {
-    mSwapChain->SwapBuffers();
+    if(mSwapChain)
+    {
+        RendererLocator::GetRenderer().CreateSwapChain(mSwapChain, GetDeviceObject(), width, height);
+    }
 }
 
-void View::OnResize(const uint16_t width, const uint16_t height)
-{    
-    RendererLocator::GetRenderer().CreateSwapChain(mSwapChain, mNativeViewHandle, width, height);
+bool View::AcquireImage()
+{
+    return mSwapChain->AcquireImage();
 }

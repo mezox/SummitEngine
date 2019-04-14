@@ -1,26 +1,24 @@
 #pragma once
 
-#include "DeviceObject.h"
+#include "RendererBase.h"
+#include "Resources/DeviceResource.h"
 
 namespace Renderer
 {
-    class RenderPass
+    class IRenderer;
+    
+    class RENDERER_API RenderPass : public DeviceResource
     {
-        friend class VulkanRenderer;
-        
     public:
         RenderPass() = default;
         
         virtual ~RenderPass() = default;
         
         RenderPass(const RenderPass& other) = delete;
-        RenderPass(RenderPass&& other) = default;
+        RenderPass(RenderPass&& other) = delete;
         RenderPass& operator=(const RenderPass& other) = delete;
         RenderPass& operator=(RenderPass&& other) = delete;
         
-        const auto& GetDeviceObject() const { return mGpuRenderPass; }
-        
-    private:
-        DeviceObject mGpuRenderPass;
+        bool Create(IRenderer& renderer);
     };
 }

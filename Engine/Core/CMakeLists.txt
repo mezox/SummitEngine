@@ -31,8 +31,10 @@ set(PUBLIC_SOURCES
     Public/Core/Service.h
     Public/Core/TypeConvert.h
     Public/Core/Templates.h
+    Public/Core/Assert.h
     Public/Dispatcher/SummitDispatcher.h
     Public/Event/Signal.h
+    Public/Event/Event.h
 )
 
 # set(PRECOMPILED_SOURCE Private/Logging/pch.cpp)

@@ -37,6 +37,11 @@ namespace Core
             return result;
         }
         
+        uint32_t Size()
+        {
+            return mQueue.size();
+        }
+        
     private:
         std::deque<T> mQueue;
         std::mutex mMutex;
@@ -47,6 +52,7 @@ namespace Core
     {
     public:
         SummitDispatcher();
+        ~SummitDispatcher();
         uint32_t Schedule(uint32_t deltaTime, std::function<void()>&& f, bool repeat);
         void Post(std::function<void()>&& f);
         

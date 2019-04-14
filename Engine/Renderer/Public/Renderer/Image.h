@@ -29,6 +29,12 @@ namespace Renderer
     class RENDERER_API ImageDesc
     {
     public:
+        ImageDesc() = default;
+        
+        explicit ImageDesc(uint32_t width) noexcept;
+        ImageDesc(uint32_t width, uint32_t height) noexcept;
+        ImageDesc(uint32_t width, uint32_t height, uint32_t depth) noexcept;
+        
         uint32_t width{ 0 };
         uint32_t height{ 0 };
         uint32_t depth{ 0 };

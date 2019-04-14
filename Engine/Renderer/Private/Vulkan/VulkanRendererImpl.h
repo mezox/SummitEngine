@@ -10,6 +10,7 @@
 #include <Math/Matrix4.h>
 
 #include "VulkanDeviceObjects.h"
+#include "Command.h"
 
 namespace Renderer
 {
@@ -23,24 +24,34 @@ namespace Renderer
 		void Initialize() override;
 		void Deinitialize() override;
 
-        void CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, void* nativeHandle, uint32_t width, uint32_t height) override;
+        DeviceObject CreateSurface(void* nativeViewHandle) const override;
+        void CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, const DeviceObject& surface, uint32_t width, uint32_t height) override;
         void CreateShader(DeviceObject& shader, const std::vector<uint8_t>& code) const override;
         void CreatePipeline(Pipeline& pipeline) override;
         void CreateFramebuffer(const FramebufferDesc& desc, DeviceObject& framebuffer) override;
         void CreateBuffer(const BufferDesc& desc, DeviceObject& buffer) override;
         void CreateImage(const ImageDesc& desc, DeviceObject& image) override;
-        void CreateCommandBuffers(const Pipeline& pipeline, Object3D& object) override;
         void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) override;
         void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) override;
-        void CreateSemaphore(const SemaphoreDescriptor& desc, DeviceObject& semaphore) const override;
-        void CreateFence(const FenceDescriptor& desc, DeviceObject& fence) const override;
-        void CreateEvent(const EventDescriptor& desc, DeviceObject& event) const override;
+        DeviceObject CreateSemaphore(const SemaphoreDescriptor& desc) const override;
+        DeviceObject CreateFence(const FenceDescriptor& desc) const override;
+        DeviceObject CreateEvent(const EventDescriptor& desc) const override;
+        void CreateRenderPass(const RenderPassDescriptor& desc, DeviceObject& deviceObject) const override;
         
         void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) override;
+        void UnmapMemory(const DeviceObject& deviceObject) const override;
         
-        void CreateRenderPass();
+        void Render(const VertexBufferBase& vb, const Pipeline& pipeline) override;
+        void RenderGui(const VertexBufferBase& vb, const Pipeline& pipeline) override;
         
-        const std::vector<VkCommandBuffer>& GetCommandBuffers() const { return mCommandBuffers; }
+        void DestroyDeviceObject(DeviceObject& buffer) const override;
+        
+        
+        void BeginCommandRecording(SwapChainBase* swapChain) override;
+        void EndCommandRecording(SwapChainBase* swapChain) override;
+        
+        
+        const std::vector<DeviceObject>& GetCommandBuffers() const { return mCommandBuffers; }
         const VkQueue GetGraphicsQueue() const { return mGraphicsQueue; }
         
         VkImageView CreateImageView(const VkImage& image, const VkFormat& format, VkImageAspectFlags flags);
@@ -68,8 +79,7 @@ namespace Renderer
 	private:
 		std::shared_ptr<PAL::RenderAPI::VulkanDevice> mDevice;
         VkCommandPool mCommandPool{ VK_NULL_HANDLE };
-        std::vector<VkCommandBuffer> mCommandBuffers;
-        std::vector<VkFramebuffer> mFramebuffers;
+        std::vector<DeviceObject> mCommandBuffers;
         VkDescriptorPool mDescriptorPool;
         
         VkFormat mImgFormat{ VK_FORMAT_B8G8R8A8_UNORM };   //TODO: Initialize
@@ -79,8 +89,9 @@ namespace Renderer
         
         std::shared_ptr<CommandBufferFactory> mCommandBufferFactory;
         
-        // Depth
         RenderPass mDefaultRenderPass;
-        VkRenderPass mRenderPass;
+
+        VkCommandBuffer mCmdBuff;
+        std::vector<Command> mCmdList;
 	};
 }

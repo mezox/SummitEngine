@@ -14,15 +14,19 @@ namespace Renderer
     class TextureDeviceObject;
     class VulkanRenderPassDeviceObject;
     class VulkanAttachmentDeviceObject;
-    class VulkanSwapChainDeviceObject;
     
     namespace Vulkan
     {
+        struct SurfaceDeviceObject;
         class DescriptorSetLayoutDeviceObject;
         class DescriptorSetDeviceObject;
         struct SemaphoreDeviceObject;
         struct FenceDeviceObject;
         struct EventDeviceObject;
+        struct RenderPassDeviceObject;
+        struct CommandBufferDeviceObject;
+        struct FrameSyncDeviceObject;
+        struct SwapChainDeviceObject;
     }
     
     class IDeviceObjectVisitor
@@ -35,12 +39,38 @@ namespace Renderer
         virtual void Visit(const FramebufferDeviceObject& object) = 0;
         virtual void Visit(const TextureDeviceObject& object) = 0;
         virtual void Visit(const VulkanAttachmentDeviceObject& object) = 0;
-        virtual void Visit(const VulkanSwapChainDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::SurfaceDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::SwapChainDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::DescriptorSetDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::SemaphoreDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::FenceDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::EventDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::RenderPassDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::CommandBufferDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::FrameSyncDeviceObject& object) = 0;
+    };
+    
+    class IMutableDeviceObjectVisitor
+    {
+    public:
+        virtual void Visit(VulkanShaderDeviceObject& object) = 0;
+        virtual void Visit(VulkanRenderPassDeviceObject& object) = 0;
+        virtual void Visit(PipelineDeviceObject& object) = 0;
+        virtual void Visit(BufferDeviceObject& object) = 0;
+        virtual void Visit(FramebufferDeviceObject& object) = 0;
+        virtual void Visit(TextureDeviceObject& object) = 0;
+        virtual void Visit(VulkanAttachmentDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::SurfaceDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::SwapChainDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::DescriptorSetLayoutDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::DescriptorSetDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::SemaphoreDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::FenceDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::EventDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::RenderPassDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::CommandBufferDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::FrameSyncDeviceObject& object) = 0;
     };
     
     class IDeviceObjectImpl
@@ -49,6 +79,7 @@ namespace Renderer
         virtual ~IDeviceObjectImpl() = default;
         virtual IDeviceObjectImpl* Move(void* address) = 0;
         virtual void Accept(IDeviceObjectVisitor& visitor) const = 0;
+        virtual void Accept(IMutableDeviceObjectVisitor& visitor) = 0;
     };
     
     class RENDERER_API DeviceObject
@@ -71,6 +102,11 @@ namespace Renderer
                 visitor.Visit(data);
             }
             
+            void Accept(IMutableDeviceObjectVisitor& visitor) override
+            {
+                visitor.Visit(data);
+            }
+            
         public:
             T data;
         };
@@ -88,11 +124,12 @@ namespace Renderer
         DeviceObject& operator=(T&& impl) noexcept;
         
         void Accept(IDeviceObjectVisitor& visitor) const;
+        void Accept(IMutableDeviceObjectVisitor& visitor);
         
     private:
         enum
         {
-            c_max_id_sizeof_vtable = 40,
+            c_max_id_sizeof_vtable = 288,
             c_max_id_sizeof = c_max_id_sizeof_vtable - sizeof(IDeviceObjectImpl*),
             c_alignment = 8
         };

@@ -1,6 +1,7 @@
 #include "VulkanCommandBuffer.h"
 
 using namespace Renderer;
+using namespace Renderer::Vulkan;
 
 VulkanCommandBuffer::VulkanCommandBuffer(std::shared_ptr<PAL::RenderAPI::VulkanDevice> device, const VkCommandPool& cp)
     : mDevice(std::move(device))

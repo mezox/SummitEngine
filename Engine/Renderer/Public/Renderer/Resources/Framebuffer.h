@@ -69,6 +69,8 @@ namespace Renderer
     
     class RENDERER_API Framebuffer final : public DeviceResource
     {
+        friend class SwapChainBase;
+        
     public:
         /*!
          @brief Constructs framebuffer attachment.
