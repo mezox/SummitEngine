@@ -11,8 +11,12 @@ namespace Core
     {
         Invalid,
         Move,
-        Press,
-        Release
+        LeftDrag,
+        RightDrag,
+        LeftPress,
+        LeftRelease,
+        RightPress,
+        RightRelease
     };
     
     struct MouseEvent
@@ -20,5 +24,7 @@ namespace Core
         MouseEventType type;
         uint16_t x;
         uint16_t y;
+        float offsetX;
+        float offsetY;
     };
 }

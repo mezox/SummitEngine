@@ -1,5 +1,5 @@
 #include "VulkanSwapChainImpl.h"
-#include <PAL/RenderAPI/VulkanDevice.h>
+#include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include <Logging/LoggingService.h>
 #include <Logging/Logger.h>
 

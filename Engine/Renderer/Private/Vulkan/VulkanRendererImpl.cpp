@@ -5,8 +5,8 @@
 #include <Renderer/Image.h>
 #include <Renderer/View.h>
 #include <Renderer/Resources/Synchronization.h>
-#include <PAL/RenderAPI/VulkanAPI.h>
-#include <PAL/RenderAPI/VulkanDevice.h>
+#include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
+#include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include <PAL/FileSystem/File.h>
 
 #include <Logging/LoggingService.h>
@@ -494,44 +494,60 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     descriptorSets.resize(SWAP_CHAIN_IMAGE_COUNT);           // Depends on swap chain images cnt
     mDevice->AllocateDescriptorSets(&allocInfo, descriptorSets.data());
     
-    for (size_t i = 0; i < SWAP_CHAIN_IMAGE_COUNT; i++)          // Depends on swap chain images cnt
+    for (size_t i = 0; i < SWAP_CHAIN_IMAGE_COUNT; ++i)          // Depends on swap chain images cnt
     {
-        // TODO: Handle this generically
-        const Buffer& mvpBuf = *effect.mUniformBuffers[0];
+        std::vector<VkWriteDescriptorSet> descriptorWrites(effect.mUniformBuffers.size() + effect.mTextures.size());
         
-        BufferObjectVisitor bufferVisitor;
-        mvpBuf.deviceObject.Accept(bufferVisitor);
+        uint32_t descriptorWriteIdx{ 0 };
         
-        const auto& texDeviceObject = effect.mTextures[0]->GetDeviceObject();
-        TextureVisitor textureVisitor;
-        texDeviceObject.Accept(textureVisitor);
+        // TODO: Descriptor writes for ubos, they should bind to unique ubos per frame, do not share them
+        for(const auto ubo : effect.mUniformBuffers)
+        {
+            const Buffer& uboBuffer = *ubo;
+            
+            BufferObjectVisitor bufferVisitor;
+            uboBuffer.deviceObject.Accept(bufferVisitor);
+            
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = bufferVisitor.buffer;
+            bufferInfo.offset = uboBuffer.offset;
+            bufferInfo.range = uboBuffer.dataSize;
+            
+            descriptorWrites[descriptorWriteIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[descriptorWriteIdx].dstSet = descriptorSets[i];
+            descriptorWrites[descriptorWriteIdx].dstBinding = 0;
+            descriptorWrites[descriptorWriteIdx].dstArrayElement = 0;
+            descriptorWrites[descriptorWriteIdx].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[descriptorWriteIdx].descriptorCount = 1;
+            descriptorWrites[descriptorWriteIdx].pBufferInfo = &bufferInfo;
+            
+            ++descriptorWriteIdx;
+        }
         
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = bufferVisitor.buffer;
-        bufferInfo.offset = mvpBuf.offset;
-        bufferInfo.range = mvpBuf.dataSize;
-        
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = textureVisitor.imageView;
-        imageInfo.sampler = textureVisitor.sampler;
-        
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = descriptorSets[i];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfo;
-        
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = descriptorSets[i];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &imageInfo;
+        // TODO: Descriptor writes for textures, they should bind to unique ubos per frame, do not share them
+        for(const auto texture : effect.mTextures)
+        {
+            const Image& image = *texture;
+            
+            const auto& texDeviceObject = image.GetDeviceObject();
+            TextureVisitor textureVisitor;
+            texDeviceObject.Accept(textureVisitor);
+            
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = textureVisitor.imageView;
+            imageInfo.sampler = textureVisitor.sampler;
+            
+            descriptorWrites[descriptorWriteIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[descriptorWriteIdx].dstSet = descriptorSets[i];
+            descriptorWrites[descriptorWriteIdx].dstBinding = 1;
+            descriptorWrites[descriptorWriteIdx].dstArrayElement = 0;
+            descriptorWrites[descriptorWriteIdx].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[descriptorWriteIdx].descriptorCount = 1;
+            descriptorWrites[descriptorWriteIdx].pImageInfo = &imageInfo;
+            
+            ++descriptorWriteIdx;
+        }
         
         mDevice->UpdateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
@@ -613,6 +629,23 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.dynamicStateCount = 2;
     dynamicState.pDynamicStates = dynamicStates;
+    
+    // -------- Handle push constants ----------------------
+    
+    std::vector<VkPushConstantRange> pushConstRanges;
+    pushConstRanges.reserve(effect.mConstantRanges.size());
+    
+    for(const auto& range : effect.mConstantRanges)
+    {
+        VkPushConstantRange vkRange;
+        vkRange.stageFlags = ConvertType(range.stage);
+        vkRange.offset = range.offset;
+        vkRange.size = range.size;
+        
+        pushConstRanges.push_back(std::move(vkRange));
+    }
+    
+    // -------- End of push constants handler --------------
 
     // Create pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -621,8 +654,8 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     pipelineLayoutInfo.pSetLayouts = nullptr;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstRanges.size());
+    pipelineLayoutInfo.pPushConstantRanges = pushConstRanges.data();
     
     VkPipelineLayout layout{ VK_NULL_HANDLE };
     mDevice->CreatePipelineLayout(&pipelineLayoutInfo, nullptr, &layout);
@@ -647,6 +680,23 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDynamicState = &dynamicState;
+    
+    if(pipeline.depthTestEnabled)
+    {
+        VkPipelineDepthStencilStateCreateInfo depthStencil{};
+        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencil.depthBoundsTestEnable = VK_FALSE;
+        depthStencil.minDepthBounds = 0.0f;
+        depthStencil.maxDepthBounds = 1.0f;
+        depthStencil.stencilTestEnable = VK_FALSE;
+        depthStencil.front = {};
+        depthStencil.back = {};
+        
+        pipelineInfo.pDepthStencilState = &depthStencil;
+    }
     
     VkPipeline pipelineHandle{ VK_NULL_HANDLE };
     mDevice->CreateGraphicsPipeline(VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipelineHandle);
@@ -982,17 +1032,27 @@ void VulkanRenderer::DestroyDeviceObject(DeviceObject& buffer) const
 
 void VulkanRenderer::RenderGui(const VertexBufferBase& vb, const Pipeline& pipeline)
 {
-    ImDrawData* imDrawData = ImGui::GetDrawData();
-    auto pos = ImGui::GetIO().MousePos;
-    
-    //LOG(Debug) << "x: " << pos.x << ", y: " << pos.y;
+    const ImDrawData* imDrawData = ImGui::GetDrawData();
     
     if (imDrawData->CmdListsCount == 0)
         return;
     
+    const ImVec2& imViewSize = ImGui::GetIO().DisplaySize;
+    
+    struct PushConstantsBlock
+    {
+        Vector2f uiScale;
+        Vector2f translate;
+    };
+    
+    PushConstantsBlock pcb;
+    pcb.uiScale = Vector2f(2.0f / imViewSize.x, 2.0f / imViewSize.y);
+    pcb.translate = Vector2f(-1.0f, -1.0f);
+    
     mCmdList.push_back(BindDescriptorSets(pipeline.mDeviceObject, pipeline.effect.mDescriptorSets[0]));
     mCmdList.push_back(BindPipeline(pipeline.mDeviceObject));
-    mCmdList.push_back(SetViewport(1280.0f, 720.0f));
+    mCmdList.push_back(SetViewport(imViewSize.x, imViewSize.y));
+    mCmdList.push_back(PushConstants(pipeline.mDeviceObject, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantsBlock), &pcb));
     mCmdList.push_back(BindVertexBuffer(vb));
     mCmdList.push_back(BindIndexBuffer(vb));
     

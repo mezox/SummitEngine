@@ -25,8 +25,8 @@ set(PRIVATE_SOURCES
 )
 
 set(PUBLIC_SOURCES
-	Public/PAL/RenderAPI/VulkanAPI.h
-	Public/PAL/RenderAPI/VulkanDevice.h
+	Public/PAL/RenderAPI/Vulkan/VulkanAPI.h
+	Public/PAL/RenderAPI/Vulkan/VulkanDevice.h
 )
 
 # Platform agnostic dependencies
@@ -38,6 +38,7 @@ set(DEPENDENCIES
     # Internal
     FileSystem
     Logging
+    Core
 )
 
 # platform dependant settings
@@ -85,3 +86,9 @@ target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
 target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Public/ ${PLATFORM_INTERFACES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "${IDE_PROJECT_FOLDER}")
+
+ide_source_files_group( ${PUBLIC_SOURCES}
+                        ${PRIVATE_SOURCES}
+                        ${PRECOMPILED_SOURCE}
+                        ${PRECOMPILED_HEADER}
+)

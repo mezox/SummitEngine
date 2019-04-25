@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Math/MathBase.h>
+#include <Core/TupleHash.h>
 
 template<typename T>
 class Vector2
@@ -22,3 +23,16 @@ public:
 };
 
 using Vector2f = Vector2<float>;
+
+namespace std
+{
+    template<>
+    struct hash<Vector2f>
+    {
+        size_t operator()(const Vector2f& key)
+        {
+            auto t = std::tie(key.x, key.y);
+            return std::hash<decltype(t)>()(t);
+        }
+    };
+}

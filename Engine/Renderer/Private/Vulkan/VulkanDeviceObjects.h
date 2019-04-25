@@ -1,7 +1,7 @@
 #pragma once
 
-#include <PAL/RenderAPI/VulkanAPI.h>
-#include <PAL/RenderAPI/VulkanDevice.h>
+#include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
+#include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include <Core/Assert.h>
 
 #include <array>
@@ -47,7 +47,7 @@ namespace Renderer
         
         struct RenderPassDeviceObject
         {
-            PAL::RenderAPI::ManagedHandle<VkRenderPass> renderPass;
+            ManagedHandle<VkRenderPass> renderPass;
         };
         
         struct CommandBufferDeviceObject
@@ -57,22 +57,22 @@ namespace Renderer
         
         struct FrameSyncDeviceObject
         {
-            PAL::RenderAPI::ManagedHandle<VkSemaphore> imageAvailableSemaphore;
-            PAL::RenderAPI::ManagedHandle<VkSemaphore> renderFinishedSemaphore;
-            PAL::RenderAPI::ManagedHandle<VkFence> frameFence;
+            ManagedHandle<VkSemaphore> imageAvailableSemaphore;
+            ManagedHandle<VkSemaphore> renderFinishedSemaphore;
+            ManagedHandle<VkFence> frameFence;
         };
         
         struct SwapChainDeviceObject
         {
-            PAL::RenderAPI::MovableHandle<VkSwapchainKHR> swapChain;
-            PAL::RenderAPI::ManagedHandle<VkSemaphore> imageAvailableSemaphore;
-            PAL::RenderAPI::ManagedHandle<VkSemaphore> renderFinishedSemaphore;
-            PAL::RenderAPI::ManagedHandle<VkFence> frameFence;
+            MovableHandle<VkSwapchainKHR> swapChain;
+            ManagedHandle<VkSemaphore> imageAvailableSemaphore;
+            ManagedHandle<VkSemaphore> renderFinishedSemaphore;
+            ManagedHandle<VkFence> frameFence;
         };
         
         struct SurfaceDeviceObject
         {
-            PAL::RenderAPI::MovableHandle<VkSurfaceKHR> surface;
+            MovableHandle<VkSurfaceKHR> surface;
         };
     }
     

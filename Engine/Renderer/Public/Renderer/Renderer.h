@@ -32,7 +32,7 @@ namespace Renderer
     {
     public:
         //VertexBufferPCI<Vector3f, Vector3f, uint16_t> mVertexBuffer;
-        VertexBufferPTCI<Vector3f, Vector2f, Vector3f, uint16_t> mVertexBuffer;
+        VertexBufferPTCI<Vector3f, Vector2f, Vector3f, uint32_t> mVertexBuffer;
     };
 
 	enum class RenderBackend
@@ -125,6 +125,7 @@ namespace Renderer
         
     public:
         Effect effect;
+        bool depthTestEnabled{ false };
         
         DeviceObject mDeviceObject;
     };

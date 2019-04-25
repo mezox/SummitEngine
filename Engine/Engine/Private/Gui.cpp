@@ -1,6 +1,8 @@
 #include <Engine/Gui.h>
 #include <Engine/Engine.h> //TODO: Remove, its here only because of frame data declaration
 
+#include <Logging/LoggingService.h>
+
 #include <imgui/imgui.h>
 #include <iostream>
 
@@ -48,7 +50,7 @@ Gui::Gui(Renderer::View& parent)
     mGuiPipeline.effect.AddAttribute(Format::R32G32F, 2);
     
     // Setup uniforms
-    mGuiPipeline.effect.AddUniformBuffer(ModuleStage::Vertex, 0, mUniformBuffer); // use push constants
+    mGuiPipeline.effect.AddConstantRange(ModuleStage::Vertex, 0, 2 * sizeof(Vector2f));
     mGuiPipeline.effect.AddTexture(ModuleStage::Fragment, 1, *mFontTexture.get());
     
     mGuiPipeline.Create();
@@ -129,23 +131,29 @@ void Gui::FinishFrame()
 
 void Gui::OnMouseEvent(Core::MouseEvent& event)
 {
+    using namespace Core;
+    
     const float mousex = float(event.x);
     const float mousey = float(event.y);
     
     ImGuiIO& io = ImGui::GetIO();
-    io.WantCaptureMouse = false;
     
-    if(event.type == Core::MouseEventType::Press)
+    switch (event.type)
     {
-        io.MouseDown[0] = true;
-    }
-    else if(event.type == Core::MouseEventType::Release)
-    {
-        io.MouseDown[0] = false;
-    }
-    else if(event.type == Core::MouseEventType::Move)
-    {
-        io.MousePos.x = mousex;
-        io.MousePos.y = mousey;
+        case MouseEventType::Move:
+        case MouseEventType::LeftDrag:
+        case MouseEventType::RightDrag:
+            io.MousePos.x = mousex;
+            io.MousePos.y = mousey;
+            break;
+        case MouseEventType::LeftPress:
+            io.MouseDown[0] = true;
+            break;
+        case MouseEventType::LeftRelease:
+            io.MouseDown[0] = false;
+            break;
+            
+        default:
+            break;
     }
 }

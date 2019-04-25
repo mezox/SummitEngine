@@ -46,6 +46,13 @@ namespace Renderer
             uint32_t count{ 0 };
         };
         
+        struct ConstantRangeDescriptor
+        {
+            ModuleStage stage{ ModuleStage::Undefined };
+            uint32_t offset{ 0 };
+            uint32_t size{ 0 };
+        };
+        
         using UniformBindingDesc = std::vector<UniformDescriptor>;
         
     public:
@@ -63,6 +70,7 @@ namespace Renderer
         void AddAttribute(Format f, uint32_t binding);
         
         void AddUniform(UniformType f, ModuleStage stage, uint32_t binding, uint32_t count);
+        void AddConstantRange(ModuleStage stage, uint32_t offset, uint32_t size);
         
         void AddUniformBuffer(ModuleStage stage, uint32_t binding, const Buffer& buffer);
         void AddTexture(ModuleStage stage, uint32_t binding, const Image& image);
@@ -76,6 +84,8 @@ namespace Renderer
         std::vector<ModuleDescriptor> mModuleDescriptors;
         std::unordered_map<uint8_t, std::vector<Format>> mAttribBindings;
         std::vector<UniformBindingDesc> mUniformBindings;
+        std::vector<ConstantRangeDescriptor> mConstantRanges;
+        
         std::vector<DeviceObject> mModules;
         std::vector<DeviceObject> mDescriptorSetLayouts;
         std::vector<DeviceObject> mDescriptorSets;

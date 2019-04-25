@@ -1,5 +1,5 @@
-#include <PAL/RenderAPI/VulkanAPI.h>
-#include <PAL/RenderAPI/VulkanDevice.h>
+#include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
+#include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include <Vulkan/VulkanLoaderHelper.h>
 #include <Logging/LoggingService.h>
 #include <PAL/FileSystem/File.h>
@@ -140,15 +140,8 @@ namespace PAL::RenderAPI
 		DeInitialize();
 	}
     
-    VulkanRenderAPI::VulkanRenderAPI()
-    {
-	}
-    
     void VulkanRenderAPI::Initialize()
     {
-		if (mIsInitialized)
-			return;
-
 		PlatformInitialize();
         LoadGlobalFunctions();
         
@@ -190,7 +183,7 @@ namespace PAL::RenderAPI
         instanceInfo.flags = 0;
         instanceInfo.pNext = nullptr;
         
-        VK_CHECK_RESULT(vkCreateInstance(&instanceInfo, nullptr, &mInstance));
+        VK_CHECK_RESULT(vkCreateInstance(&instanceInfo, nullptr, &mInstance.Get()));
         
         LoadInstanceFunctions();
         LoadInstanceExtensions();
@@ -205,30 +198,23 @@ namespace PAL::RenderAPI
             debugUtilsInfo.pUserData = nullptr; // Optional
             debugUtilsInfo.flags = 0;
             
-            VK_CHECK_RESULT(vkCreateDebugUtilsMessengerEXT(mInstance, &debugUtilsInfo, nullptr, &mCallback));
+            VK_CHECK_RESULT(vkCreateDebugUtilsMessengerEXT(mInstance.Get(), &debugUtilsInfo, nullptr, &mCallback.Get()));
         }
-
-		mIsInitialized = true;
     }
     
     void VulkanRenderAPI::DeInitialize()
     {
-        if(mIsInitialized)
-        {
-            mAvailableInstanceExtensions.clear();
-            mAvailableInstanceLayers.clear();
-            mEnabledInstanceExtensions.clear();
-            mEnabledInstanceValidationLayers.clear();
-            
-            vkDestroyDebugUtilsMessengerEXT(mInstance, mCallback, nullptr);
-            vkDestroyInstance(mInstance, nullptr);
-            PlatformDeinitialize();
-
-            mIsInitialized = false;
-        }
+        mAvailableInstanceExtensions.clear();
+        mAvailableInstanceLayers.clear();
+        mEnabledInstanceExtensions.clear();
+        mEnabledInstanceValidationLayers.clear();
+        
+        vkDestroyDebugUtilsMessengerEXT(mInstance.Get(), mCallback.Get(), nullptr);
+        vkDestroyInstance(mInstance.Get(), nullptr);
+        PlatformDeinitialize();
     }
 
-    bool VulkanRenderAPI::IsExtensionEnabled(const char* extensionName) const
+    const bool VulkanRenderAPI::IsExtensionEnabled(const char* extensionName) const
     {
 		return std::find_if(mEnabledInstanceExtensions.begin(), mEnabledInstanceExtensions.end(), [extensionName](const char* ext) {
 			return strcmp(extensionName, ext) == 0;
@@ -269,7 +255,7 @@ namespace PAL::RenderAPI
 
 	void VulkanRenderAPI::DestroySurface(const VkSurfaceKHR& surface) const
 	{
-		vkDestroySurfaceKHR(mInstance, surface, nullptr);
+		vkDestroySurfaceKHR(mInstance.Get(), surface, nullptr);
 	}
     
     void VulkanRenderAPI::OnDeviceConnected()
@@ -286,16 +272,16 @@ namespace PAL::RenderAPI
     
     void VulkanRenderAPI::LoadInstanceFunctions()
     {
-        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkDestroyInstance);
-        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumeratePhysicalDevices);
-        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceProperties);
-		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumerateDeviceExtensionProperties);
-        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkEnumerateDeviceLayerProperties);
-		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceQueueFamilyProperties);
-		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceFeatures);
-        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetPhysicalDeviceMemoryProperties);
-		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkCreateDevice);
-		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance, vkGetDeviceProcAddr);
+        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkDestroyInstance);
+        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkEnumeratePhysicalDevices);
+        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkGetPhysicalDeviceProperties);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkEnumerateDeviceExtensionProperties);
+        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkEnumerateDeviceLayerProperties);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkGetPhysicalDeviceQueueFamilyProperties);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkGetPhysicalDeviceFeatures);
+        LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkGetPhysicalDeviceMemoryProperties);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkCreateDevice);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION(mInstance.Get(), vkGetDeviceProcAddr);
     }
     
     void VulkanRenderAPI::LoadInstanceExtensions()
@@ -305,8 +291,8 @@ namespace PAL::RenderAPI
         // VK_EXT_debug_utils
         if(IsExtensionEnabled(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
         {
-            LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkCreateDebugUtilsMessengerEXT);
-            LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkDestroyDebugUtilsMessengerEXT);
+            LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance.Get(), vkCreateDebugUtilsMessengerEXT);
+            LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance.Get(), vkDestroyDebugUtilsMessengerEXT);
         }
         else
         {
@@ -315,11 +301,11 @@ namespace PAL::RenderAPI
 
 		if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
 		{
-			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkDestroySurfaceKHR);
-			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
-			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkGetPhysicalDeviceSurfaceFormatsKHR);
-			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkGetPhysicalDeviceSurfacePresentModesKHR);
-			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkGetPhysicalDeviceSurfaceSupportKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance.Get(), vkDestroySurfaceKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance.Get(), vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance.Get(), vkGetPhysicalDeviceSurfaceFormatsKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance.Get(), vkGetPhysicalDeviceSurfacePresentModesKHR);
+			LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance.Get(), vkGetPhysicalDeviceSurfaceSupportKHR);
 		}
 		else
 		{
@@ -352,10 +338,10 @@ namespace PAL::RenderAPI
     std::vector<VkPhysicalDevice> VulkanRenderAPI::EnumeratePhysicalDevices() const
     {
         uint32_t deviceCount{ 0 };
-        VK_CHECK_RESULT(vkEnumeratePhysicalDevices(mInstance, &deviceCount, nullptr));
+        VK_CHECK_RESULT(vkEnumeratePhysicalDevices(mInstance.Get(), &deviceCount, nullptr));
 
         std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-        VK_CHECK_RESULT(vkEnumeratePhysicalDevices(mInstance, &deviceCount, physicalDevices.data()));
+        VK_CHECK_RESULT(vkEnumeratePhysicalDevices(mInstance.Get(), &deviceCount, physicalDevices.data()));
         
         return physicalDevices;
     }

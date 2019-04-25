@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Math/MathBase.h>
+#include <Core/TupleHash.h>
 
 template<typename T>
 class Vector3
@@ -16,6 +17,22 @@ public:
         : x(x_), y(y_), z(z_)
     {}
     
+    Vector3<T> operator*(const float s)
+    {
+        x *= s;
+        y *= s;
+        z *= s;
+        return *this;
+    }
+    
+    Vector3<T> operator-()
+    {
+        x *= -1.0f;
+        y *= -1.0f;
+        z *= -1.0f;
+        return *this;
+    }
+    
 public:
     T x{ 0 };
     T y{ 0 };
@@ -23,3 +40,16 @@ public:
 };
 
 using Vector3f = Vector3<float>;
+
+namespace std
+{
+    template<>
+    struct hash<Vector3f>
+    {
+        size_t operator()(const Vector3f& key)
+        {
+            auto t = std::tie(key.x, key.y, key.z);
+            return std::hash<decltype(t)>()(t);
+        }
+    };
+}

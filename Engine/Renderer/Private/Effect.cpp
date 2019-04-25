@@ -29,6 +29,11 @@ void Effect::AddUniform(const UniformType type, const ModuleStage stage, const u
     mUniformBindings[binding].push_back({ type, stage, count });
 }
 
+void Effect::AddConstantRange(ModuleStage stage, const uint32_t offset, const uint32_t size)
+{
+    mConstantRanges.push_back({ stage, offset, size });
+}
+
 void Effect::AddUniformBuffer(ModuleStage stage, uint32_t binding, const Buffer& buffer)
 {
     AddUniform(UniformType::Buffer, stage, binding, 1);

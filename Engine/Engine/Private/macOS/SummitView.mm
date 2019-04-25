@@ -11,6 +11,8 @@ using namespace Core;
     NSTrackingArea* trackingArea;
     sigslot::signal<Core::MouseEvent&>* mMouseEventSignal;
     sigslot::signal<uint32_t, uint32_t>* mResizeEventSignal;
+    
+    CGPoint mLastPoint;
 }
 
 - (instancetype)initWithBounds:(NSRect)bounds
@@ -100,17 +102,13 @@ using namespace Core;
     NSLog(@"Mouse entered view");
 }
 
-- (void)mouseDragged:(NSEvent *)event
-{
-}
-
 - (void)mouseDown:(NSEvent *)event
 {
     CGPoint point = [event locationInWindow];
     
     Core::DispatcherService::Service().Post([point, self](){
         MouseEvent event;
-        event.type = MouseEventType::Press;
+        event.type = MouseEventType::LeftPress;
         (*mMouseEventSignal)(event);
     });
 }
@@ -119,7 +117,7 @@ using namespace Core;
 {
     Core::DispatcherService::Service().Post([self]() {
         MouseEvent event;
-        event.type = MouseEventType::Release;
+        event.type = MouseEventType::LeftRelease;
         (*mMouseEventSignal)(event);
     });
 }
@@ -139,22 +137,81 @@ using namespace Core;
         
         (*mMouseEventSignal)(event);
     });
+    
+    mLastPoint = CGPointMake((float)x, (float)y);
+}
+
+- (void)mouseDragged:(NSEvent *)event
+{
+    CGPoint point = [event locationInWindow];
+    
+    uint16_t x = point.x;
+    uint16_t y = self.frame.size.height - point.y;
+    
+    Core::DispatcherService::Service().Post([x, y, self](){
+        MouseEvent event;
+        event.type = MouseEventType::LeftDrag;
+        event.x = x;
+        event.y = y;
+        
+        (*mMouseEventSignal)(event);
+    });
 }
 
 - (void)rightMouseDown:(NSEvent *)event
 {
+    CGPoint point = [event locationInWindow];
+    
+    Core::DispatcherService::Service().Post([point, self](){
+        MouseEvent event;
+        event.type = MouseEventType::RightPress;
+        (*mMouseEventSignal)(event);
+    });
 }
 
 - (void)rightMouseDragged:(NSEvent *)event
 {
+    CGPoint point = [event locationInWindow];
+    
+    uint16_t x = point.x;
+    uint16_t y = self.frame.size.height - point.y;
+    
+    Core::DispatcherService::Service().Post([x, y, lastPoint = self->mLastPoint, self](){
+        MouseEvent event;
+        event.type = MouseEventType::RightDrag;
+        event.x = x;
+        event.y = y;
+        
+        const auto diffX = lastPoint.x - (float)x;
+        const auto diffY = lastPoint.y - (float)y;
+        
+        event.offsetY = diffY;
+        event.offsetX = diffX;
+        
+        (*mMouseEventSignal)(event);
+    });
+    
+    mLastPoint = CGPointMake((float)x, (float)y);
 }
 
 - (void)rightMouseUp:(NSEvent *)event
 {
+    CGPoint point = [event locationInWindow];
+    
+    Core::DispatcherService::Service().Post([point, self](){
+        MouseEvent event;
+        event.type = MouseEventType::RightRelease;
+        (*mMouseEventSignal)(event);
+    });
 }
 
 - (void)keyDown:(NSEvent *)event
 {
+}
+
+- (void)scrollWheel:(NSEvent *)event
+{
+    NSLog(@"scroll");
 }
 
 /** Returns a Metal-compatible layer. */

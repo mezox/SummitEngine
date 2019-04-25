@@ -217,6 +217,11 @@ void Matrix4::SetScale(const Vector3f& translation)
     m._33 = translation.z;
 }
 
+Vector4f Matrix4::GetColumn(uint8_t idx) const noexcept
+{
+    return *(Vector4f*)&mData[idx * 4];
+}
+
 void Matrix4::Transpose()
 {
     std::swap(mData[1], mData[4]);

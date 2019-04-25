@@ -39,8 +39,11 @@ set(PUBLIC_SOURCES
     Public/Renderer/Effect.h
     Public/Renderer/RenderPass.h
     Public/Renderer/CommandBuffer.h
-
     Public/Renderer/Input.h
+
+    Public/Renderer/Camera.h
+    Public/Renderer/Transform.h
+    Public/Renderer/Object3D.h
 
     # resources
     Public/Renderer/Resources/DeviceResource.h
@@ -56,8 +59,6 @@ set(PRIVATE_SOURCES
     Private/Image.cpp
     Private/Vulkan/VulkanCommandBuffer.h
     Private/Vulkan/VulkanCommandBuffer.cpp
-    Private/Vulkan/VulkanGuiRenderer.h
-	Private/Vulkan/VulkanGuiRenderer.cpp
     Private/Vulkan/VulkanRendererImpl.h
 	Private/Vulkan/VulkanRendererImpl.cpp
 	Private/Vulkan/VulkanSwapChainImpl.h
@@ -70,8 +71,11 @@ set(PRIVATE_SOURCES
     Private/RenderPass.cpp
     Private/Command.h
     Private/Command.cpp
-
     Private/Input.cpp
+
+    Private/Camera.cpp
+    Private/Transform.cpp
+    Private/Object3D.cpp
 
     Private/Vulkan/VulkanCommands.h
     Private/Vulkan/VulkanTypes.h

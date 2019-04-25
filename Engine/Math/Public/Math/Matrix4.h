@@ -41,6 +41,8 @@ public:
     void SetScale(float x, float y, float z);
     void SetScale(const Vector3f& scale);
     
+    [[nodiscard]] Vector4f GetColumn(uint8_t idx) const noexcept;
+    
     void Transpose();
     
     Matrix4& operator*=(const Matrix4& other);

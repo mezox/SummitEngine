@@ -28,7 +28,7 @@ void VulkanImplMacOS::PlatformLoadInstanceExtensions()
 {
 	if (IsExtensionEnabled(VK_MVK_MACOS_SURFACE_EXTENSION_NAME))
 	{
-		LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance, vkCreateMacOSSurfaceMVK);
+		LOAD_VK_INSTANCE_LEVEL_FUNCTION_EXT(mInstance.Get(), vkCreateMacOSSurfaceMVK);
 	}
 	else
 	{
@@ -45,7 +45,7 @@ VkSurfaceKHR VulkanImplMacOS::CreateWindowSurface(void* nativeHandle) const
     surfaceCreateInfo.flags = 0;
     
     VkSurfaceKHR vulkanSurface{ VK_NULL_HANDLE };
-	VK_CHECK_RESULT(vkCreateMacOSSurfaceMVK(mInstance, &surfaceCreateInfo, nullptr, &vulkanSurface));
+	VK_CHECK_RESULT(vkCreateMacOSSurfaceMVK(mInstance.Get(), &surfaceCreateInfo, nullptr, &vulkanSurface));
 
 	return vulkanSurface;
 }

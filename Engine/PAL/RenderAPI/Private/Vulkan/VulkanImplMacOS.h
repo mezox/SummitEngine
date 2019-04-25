@@ -1,10 +1,10 @@
 #pragma once
 
-#include <PAL/RenderAPI/VulkanAPI.h>
+#include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
 
 namespace PAL::RenderAPI
 {
-	class VulkanImplMacOS : public VulkanRenderAPI
+	class VulkanImplMacOS final : public VulkanRenderAPI
 	{
 	public:
 		VkSurfaceKHR CreateWindowSurface(void* nativeHandle) const override;

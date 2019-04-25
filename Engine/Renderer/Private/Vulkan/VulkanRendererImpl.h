@@ -3,7 +3,7 @@
 #include <Renderer/Renderer.h>
 #include <Renderer/Resources/Framebuffer.h>
 #include <Renderer/RenderPass.h>
-#include <PAL/RenderAPI/VulkanDevice.h>
+#include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include <memory>
 
 #include <Renderer/DeviceObject.h>

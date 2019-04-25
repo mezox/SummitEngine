@@ -31,3 +31,13 @@ bool View::AcquireImage()
 {
     return mSwapChain->AcquireImage();
 }
+
+const uint32_t View::GetWidth() const noexcept
+{
+    return mSwapChain->GetActiveFramebuffer().GetWidth();
+}
+
+const uint32_t View::GetHeight() const noexcept
+{
+    return mSwapChain->GetActiveFramebuffer().GetHeight();
+}

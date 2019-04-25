@@ -6,7 +6,7 @@
 
 #include <PAL/FileSystem/FileSystemService.h>
 #include <PAL/FileSystem/File.h>
-#include <PAL/RenderAPI/VulkanAPI.h>
+#include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
 #include <Dispatcher/SummitDispatcher.h>
 
 #include <microprofile/microprofile.h>
@@ -66,26 +66,29 @@ void SummitEngine::Initialize()
 
 void SummitEngine::StartFrame()
 {
-    mFrameData.deltaTime = 0.001f;
-    mFrameData.width = 1280.0f;
-    mFrameData.height = 720.0f;
+    MicroProfileFlip(0);
     
-    mGui->StartFrame(mFrameData);
+    EarlyUpdate(mFrameData);
+    
+    mActiveSwapChain->AcquireImage();
+    
+    mFrameData.deltaTime = 0.001f;
+    mFrameData.width = mActiveSwapChain->GetActiveFramebuffer().GetWidth();
+    mFrameData.height = mActiveSwapChain->GetActiveFramebuffer().GetHeight();
+    
+    //mGui->StartFrame(mFrameData);
 }
 
 void SummitEngine::Update()
 {
-    MicroProfileFlip(0);
     StartFrame();
     
     // Begin update phase
     Updatee({});
     
     // --------- RENDER PHASE -------------
-    mActiveSwapChain->AcquireImage();
-    
     mRenderer->BeginCommandRecording(mActiveSwapChain);
-    mGui->FinishFrame();
+    //mGui->FinishFrame();
     
     Render({});
     
@@ -120,7 +123,8 @@ void SummitEngine::SetActiveSwapChain(Renderer::SwapChainBase* swapChain)
 void SummitEngine::RenderObject(Object3D& object, Renderer::Pipeline& pipeline)
 {
     mRenderer->Render(object.mVertexBuffer, pipeline);
-    mRenderer->RenderGui(mGui->mVertexBuffer, mGui->mGuiPipeline);
+    
+    //mRenderer->RenderGui(mGui->mVertexBuffer, mGui->mGuiPipeline);
 }
 
 void SummitEngine::Run()

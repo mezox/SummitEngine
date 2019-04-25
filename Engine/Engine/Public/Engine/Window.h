@@ -36,10 +36,7 @@ namespace Application
         
         Renderer::View* GetView() const { return mView.get(); }
             
-    private:
-        uint16_t mWidth{ 1920 };
-        uint16_t mHeight{ 1080 };
-        
+    private:        
         std::unique_ptr<NativeWindow> mNativeWindow;
         std::unique_ptr<Renderer::View> mView;
     };

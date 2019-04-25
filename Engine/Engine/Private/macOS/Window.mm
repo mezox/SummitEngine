@@ -41,9 +41,7 @@ namespace Application
     };
     
     Window::Window(const std::string& title, const uint16_t width, const uint16_t height)
-        : mWidth(width)
-        , mHeight(height)
-        , mNativeWindow(std::make_unique<Window::NativeWindow>(title, width, height))
+        : mNativeWindow(std::make_unique<Window::NativeWindow>(title, width, height))
     {
     }
     

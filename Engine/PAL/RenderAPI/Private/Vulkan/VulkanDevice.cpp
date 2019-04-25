@@ -1,5 +1,5 @@
-#include <PAL/RenderAPI/VulkanAPI.h>
-#include <PAL/RenderAPI/VulkanDevice.h>
+#include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
+#include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include "VulkanLoaderHelper.h"
 #include <Logging/LoggingService.h>
 
@@ -362,6 +362,11 @@ namespace PAL::RenderAPI
         vkCmdSetScissor(commandBuffer, firstScissor, scissorCount, pScissors);
     }
     
+    void VulkanDevice::CmdPushConstants(VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues) const
+    {
+        vkCmdPushConstants(commandBuffer, layout, stageFlags, offset, size, pValues);
+    }
+    
     VkResult VulkanDevice::CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const
     {
         const auto result = vkCreateDescriptorSetLayout(mLogicalDevice, pCreateInfo, pAllocator, pSetLayout);
@@ -484,6 +489,7 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdPipelineBarrier);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdSetViewport);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdSetScissor);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdPushConstants);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateDescriptorSetLayout);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyDescriptorSetLayout);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "VulkanDeviceObjects.h"
-#include <PAL/RenderAPI/VulkanDevice.h>
+#include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include <Math/Vector2.h>
 #include <Math/Vector4.h>
 
@@ -10,6 +10,13 @@
 
 namespace Renderer::Vulkan
 {
+    const VkPipelineLayout GetPipelineLayout(const DeviceObject& pipeline)
+    {
+        PipelineObjectVisitor pipelineVisitor;
+        pipeline.Accept(pipelineVisitor);
+        return pipelineVisitor.layout;
+    }
+    
     template<typename Derived>
     class VulkanCommand
     {
@@ -328,5 +335,39 @@ namespace Renderer::Vulkan
         
     private:
         VkRect2D mScissor;
+    };
+    
+    class PushConstants final : public VulkanCommand<PushConstants>
+    {
+    public:
+        PushConstants(const DeviceObject& pipeline,
+                      const VkShaderStageFlags flags,
+                      const uint32_t offset,
+                      const uint32_t size,
+                      const void* pValues)
+            : mPipelineLayout(GetPipelineLayout(pipeline))
+            , mStageFlags(flags)
+            , mOffset(offset)
+            , mSize(size)
+            , mValuesPtr(pValues)
+        {}
+        
+        [[nodiscard]] std::string GetDescription() const noexcept
+        {
+            return "CommandBuffer::PushConstants";
+        }
+        
+        // CRTP VulkanCommand
+        void OnExecute(const PAL::RenderAPI::VulkanDevice& device, const VkCommandBuffer& cmdBuffer) const
+        {
+            device.CmdPushConstants(cmdBuffer, mPipelineLayout, mStageFlags, mOffset, mSize, mValuesPtr);
+        }
+        
+    private:
+        const VkPipelineLayout mPipelineLayout{ VK_NULL_HANDLE };
+        const VkShaderStageFlags mStageFlags{ VK_NULL_HANDLE };
+        const uint32_t mOffset{ 0 };
+        const uint32_t mSize{ 0 };
+        const void* mValuesPtr{ nullptr };
     };
 }

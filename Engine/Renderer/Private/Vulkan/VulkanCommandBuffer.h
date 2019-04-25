@@ -1,6 +1,6 @@
 #pragma once
 
-#include <PAL/RenderAPI/VulkanDevice.h>
+#include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include <Renderer/Resources/DeviceResource.h>
 #include <Renderer/CommandBuffer.h>
 

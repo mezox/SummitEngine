@@ -20,6 +20,9 @@ namespace Renderer
         void OnResize(uint16_t x, uint16_t y);
         bool AcquireImage();
         
+        [[nodiscard]] const uint32_t GetWidth() const noexcept;
+        [[nodiscard]] const uint32_t GetHeight() const noexcept;
+        
         SwapChainBase* GetSwapChain() { return mSwapChain.get(); }
         
     public:
@@ -27,9 +30,6 @@ namespace Renderer
         
     private:
         void* mNativeViewHandle{ nullptr };
-        
-        uint16_t mWidth{ 1920 };
-        uint16_t mHeight{ 1080 };
         std::unique_ptr<SwapChainBase> mSwapChain;
     };
 }
