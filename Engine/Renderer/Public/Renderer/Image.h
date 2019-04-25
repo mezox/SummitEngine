@@ -26,6 +26,14 @@ namespace Renderer
         DepthStencilAttachment
     };
     
+    enum class ImageLayout
+    {
+        Undefined,
+        Present,
+        ColorAttachment,
+        DepthAttachment,
+    };
+    
     class RENDERER_API ImageDesc
     {
     public:

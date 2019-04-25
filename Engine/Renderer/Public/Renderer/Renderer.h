@@ -27,13 +27,6 @@ namespace Renderer
         uint32_t height{ 0 };
         void* data{ nullptr };
     };
-    
-    class RENDERER_API Object3D
-    {
-    public:
-        //VertexBufferPCI<Vector3f, Vector3f, uint16_t> mVertexBuffer;
-        VertexBufferPTCI<Vector3f, Vector2f, Vector3f, uint32_t> mVertexBuffer;
-    };
 
 	enum class RenderBackend
 	{
@@ -43,6 +36,7 @@ namespace Renderer
 	};
     
     class Pipeline;
+    class Object3d;
     struct SemaphoreDescriptor;
     struct FenceDescriptor;
     struct EventDescriptor;
@@ -71,7 +65,7 @@ namespace Renderer
         virtual void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) = 0;
         virtual void UnmapMemory(const DeviceObject& deviceObject) const = 0;
         virtual void CreateRenderPass(const RenderPassDescriptor& desc, DeviceObject& deviceObject) const = 0;
-        virtual void Render(const VertexBufferBase& vb, const Pipeline& pipeline) = 0;
+        virtual void Render(const Object3d& vb, const Pipeline& pipeline) = 0;
         virtual void RenderGui(const VertexBufferBase& vb, const Pipeline& pipeline) = 0;
         
         // Release

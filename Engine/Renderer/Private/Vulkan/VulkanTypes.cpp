@@ -41,6 +41,18 @@ auto TypeLinkerTempl<Renderer::ImageUsage, VkImageUsageFlagBits>::operator()(con
 }
 
 template<>
+auto TypeLinkerTempl<Renderer::ImageLayout, VkImageLayout>::operator()(const from_t& imageLayout) -> to_t
+{
+    switch(imageLayout)
+    {
+        case Renderer::ImageLayout::Undefined: throw std::runtime_error("Undefined image layout");
+        case Renderer::ImageLayout::Present: return to_t{ VK_IMAGE_LAYOUT_PRESENT_SRC_KHR };
+        case Renderer::ImageLayout::ColorAttachment: return to_t{ VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+        case Renderer::ImageLayout::DepthAttachment: return to_t{ VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+    }
+}
+
+template<>
 auto TypeLinkerTempl<Renderer::Format, VkFormat>::operator()(const from_t& imageType) -> to_t
 {
     switch(imageType)
@@ -51,6 +63,7 @@ auto TypeLinkerTempl<Renderer::Format, VkFormat>::operator()(const from_t& image
         case Renderer::Format::R32G32F: return to_t{ VK_FORMAT_R32G32_SFLOAT };
         case Renderer::Format::R32G32B32F: return to_t{ VK_FORMAT_R32G32B32_SFLOAT };
         case Renderer::Format::R32G32B32A32F: return to_t{ VK_FORMAT_R32G32B32A32_SFLOAT };
+        case Renderer::Format::B8G8R8A8: return to_t{ VK_FORMAT_B8G8R8A8_UNORM };
         case Renderer::Format::D32F: return to_t{ VK_FORMAT_D32_SFLOAT };
         case Renderer::Format::D32FS8F: return to_t{ VK_FORMAT_D32_SFLOAT_S8_UINT };
         case Renderer::Format::D24S8: return to_t{ VK_FORMAT_D24_UNORM_S8_UINT };

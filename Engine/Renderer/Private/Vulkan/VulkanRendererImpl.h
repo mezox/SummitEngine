@@ -41,7 +41,7 @@ namespace Renderer
         void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) override;
         void UnmapMemory(const DeviceObject& deviceObject) const override;
         
-        void Render(const VertexBufferBase& vb, const Pipeline& pipeline) override;
+        void Render(const Object3d& vb, const Pipeline& pipeline) override;
         void RenderGui(const VertexBufferBase& vb, const Pipeline& pipeline) override;
         
         void DestroyDeviceObject(DeviceObject& buffer) const override;
@@ -90,6 +90,8 @@ namespace Renderer
         std::shared_ptr<CommandBufferFactory> mCommandBufferFactory;
         
         RenderPass mDefaultRenderPass;
+        
+        //VulkanAttachmentDeviceObject mShadowMap;
 
         VkCommandBuffer mCmdBuff;
         std::vector<Command> mCmdList;

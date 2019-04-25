@@ -4,6 +4,7 @@
 #include <Renderer/Resources/Buffer.h>
 #include <Renderer/Image.h>
 #include <Renderer/View.h>
+#include <Renderer/Object3D.h>
 #include <Renderer/Resources/Synchronization.h>
 #include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
 #include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
@@ -88,7 +89,10 @@ void VulkanRenderer::Initialize()
     
     mDevice->GetDeviceQueue(0, 0, &mGraphicsQueue);
     
-    mDefaultRenderPass.Create(*this);
+    RenderPassDescriptor rpDesc;
+    rpDesc.attachments.push_back({ AttachmentType::Color, Format::B8G8R8A8, ImageLayout::Present });
+    rpDesc.attachments.push_back({ AttachmentType::Depth, Format::D32F, ImageLayout::DepthAttachment });
+    mDefaultRenderPass.Create(rpDesc, *this);
     
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -128,6 +132,9 @@ void VulkanRenderer::Initialize()
     allocInfo.commandBufferCount = 1;
     
     mDevice->AllocateCommandBuffers(&allocInfo, &mCmdBuff);
+    
+    //mShadowMap = CreateAttachment(1280, 720, Format::D32F, ImageUsage::DepthStencilAttachment);
+    
 }
 
 DeviceObject VulkanRenderer::CreateSurface(void* nativeViewHandle) const
@@ -904,6 +911,7 @@ void VulkanRenderer::CreateImage(const ImageDesc& desc, DeviceObject& image)
         mDevice->DestroyBuffer(stagingBdo.buffer, nullptr);
         mDevice->FreeMemory(stagingBdo.memory, nullptr);
     }
+
 }
 
 void VulkanRenderer::CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture)
@@ -1012,8 +1020,10 @@ void VulkanRenderer::UnmapMemory(const DeviceObject& deviceObject) const
     mDevice->UnmapMemory(visitor.memory);
 }
 
-void VulkanRenderer::Render(const VertexBufferBase& vb, const Pipeline& pipeline)
+void VulkanRenderer::Render(const Object3d& object, const Pipeline& pipeline)
 {
+    const auto& vb = object.GetVertexBuffer();
+    
     if(!vb.mStreams[0].get())
         return;
 
@@ -1080,42 +1090,60 @@ void VulkanRenderer::RenderGui(const VertexBufferBase& vb, const Pipeline& pipel
 }
 
 void VulkanRenderer::CreateRenderPass(const RenderPassDescriptor& desc, DeviceObject& deviceObject) const
-{    
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = mImgFormat;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+{
+    _ASSERT(!desc.attachments.empty() && "No attachments defined for render pass");
     
-    VkAttachmentReference colorAttachmentRef{};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    const auto numAttachments = desc.attachments.size();
     
-    VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = VK_FORMAT_D32_SFLOAT;
-    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    std::vector<VkAttachmentDescription> attachments;
+    attachments.reserve(numAttachments);
     
-    VkAttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    std::vector<VkAttachmentReference> colorAttachmentRefs;
+    VkAttachmentReference depthAttachmentRef{ VK_NULL_HANDLE };
+    
+    for(uint32_t id{ 0 }; id < numAttachments; ++id)
+    {
+        const auto& attachmentDesc = desc.attachments[id];
+        
+        VkAttachmentDescription attachment{};
+        attachment.flags = 0;
+        attachment.format = ConvertType(attachmentDesc.format);
+        attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachment.finalLayout = ConvertType(attachmentDesc.layout);
+        
+        VkAttachmentReference attachmentRef{};
+        attachmentRef.attachment = id;  // Index to pAttachments array in CreateInfo
+        
+        if(!Detail::IsDepthFormat(attachmentDesc.format))
+        {
+            attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            colorAttachmentRefs.push_back(std::move(attachmentRef));
+        }
+        else
+        {
+            attachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            depthAttachmentRef = std::move(attachmentRef);
+        }
+        
+        attachments.push_back(std::move(attachment));
+    }
     
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.flags = 0;
+    subpass.inputAttachmentCount = 0;
+    subpass.pInputAttachments = nullptr;
+    subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size());
+    subpass.pColorAttachments = colorAttachmentRefs.data();
+    subpass.preserveAttachmentCount = 0;
+    subpass.pResolveAttachments = nullptr;
+    subpass.pPreserveAttachments = nullptr;
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
-    
-    std::vector<VkAttachmentDescription> attachments{ colorAttachment, depthAttachment };
     
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

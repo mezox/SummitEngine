@@ -7,6 +7,8 @@ namespace Renderer
 {
     class IRenderer;
     
+    struct RenderPassDescriptor;
+    
     class RENDERER_API RenderPass : public DeviceResource
     {
     public:
@@ -19,6 +21,6 @@ namespace Renderer
         RenderPass& operator=(const RenderPass& other) = delete;
         RenderPass& operator=(RenderPass&& other) = delete;
         
-        bool Create(IRenderer& renderer);
+        bool Create(const RenderPassDescriptor& desc, IRenderer& renderer);
     };
 }

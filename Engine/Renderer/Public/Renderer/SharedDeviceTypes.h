@@ -23,6 +23,8 @@ namespace Renderer
         R32G32B32F,
         R32G32B32A32F,
         
+        B8G8R8A8,
+        
         // Depth buffer formats
         D32F,
         D32FS8F,
@@ -43,6 +45,21 @@ namespace Renderer
             case Format::D32F: return 4;
             case Format::D32FS8F: return 5;
             case Format::D24S8: return 4;
+        }
+    }
+    
+    namespace Detail
+    {
+        constexpr bool IsDepthFormat(const Format f)
+        {
+            switch (f)
+            {
+                case Format::D32F:
+                case Format::D32FS8F:
+                case Format::D24S8: return true;
+                    
+                default: return false;
+            }
         }
     }
 }

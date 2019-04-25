@@ -13,6 +13,7 @@ namespace Renderer
     enum class BufferUsage;
     enum class ImageType;
     enum class ImageUsage;
+    enum class ImageLayout;
     enum class Format;
     enum class AddressMode;
     enum class FilterMode;
@@ -25,6 +26,7 @@ namespace Renderer
 template<> struct TypeLinkerAuto<Renderer::BufferUsage> : public TypeLinkerTempl<Renderer::BufferUsage, VkBufferUsageFlagBits> {};
 template<> struct TypeLinkerAuto<Renderer::ImageType> : public TypeLinkerTempl<Renderer::ImageType, VkImageType> {};
 template<> struct TypeLinkerAuto<Renderer::ImageUsage> : public TypeLinkerTempl<Renderer::ImageUsage, VkImageUsageFlagBits> {};
+template<> struct TypeLinkerAuto<Renderer::ImageLayout> : public TypeLinkerTempl<Renderer::ImageLayout, VkImageLayout> {};
 template<> struct TypeLinkerAuto<Renderer::Format> : public TypeLinkerTempl<Renderer::Format, VkFormat> {};
 template<> struct TypeLinkerAuto<Renderer::MemoryType> : public TypeLinkerTempl<Renderer::MemoryType, VkMemoryPropertyFlags> {};
 template<> struct TypeLinkerAuto<Renderer::AddressMode> : public TypeLinkerTempl<Renderer::AddressMode, VkSamplerAddressMode> {};

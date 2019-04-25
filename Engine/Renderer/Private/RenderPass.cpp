@@ -5,9 +5,9 @@
 using namespace Renderer;
 using namespace Renderer::Vulkan;
 
-bool RenderPass::Create(IRenderer& renderer)
+bool RenderPass::Create(const RenderPassDescriptor& desc, IRenderer& renderer)
 {
-    renderer.CreateRenderPass({}, mDeviceResource);
+    renderer.CreateRenderPass(desc, mDeviceResource);
     
     return true;
 }
