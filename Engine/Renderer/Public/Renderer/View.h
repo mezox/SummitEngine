@@ -23,12 +23,15 @@ namespace Renderer
         [[nodiscard]] const uint32_t GetWidth() const noexcept;
         [[nodiscard]] const uint32_t GetHeight() const noexcept;
         
+        void SetSwapChain(std::unique_ptr<SwapChainBase> swapChain);
         SwapChainBase* GetSwapChain() { return mSwapChain.get(); }
         
     public:
         Core::Event<Core::MouseEvent&> MouseEvent;
         
     private:
+        uint32_t mWidth{ 0 };
+        uint32_t mHeight{ 0 };
         void* mNativeViewHandle{ nullptr };
         std::unique_ptr<SwapChainBase> mSwapChain;
     };

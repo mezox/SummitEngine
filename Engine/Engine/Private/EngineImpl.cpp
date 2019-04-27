@@ -13,6 +13,7 @@
 
 #include <Renderer/Renderer.h>
 #include <Renderer/View.h>
+#include <Renderer/Object3D.h>
 
 #include <Engine/Application.h>
 
@@ -87,7 +88,10 @@ void SummitEngine::Update()
     Updatee({});
     
     // --------- RENDER PHASE -------------
-    mRenderer->BeginCommandRecording(mActiveSwapChain);
+    mRenderer->BeginCommandRecording();
+    
+    EarlyUpdate({});
+    
     //mGui->FinishFrame();
     
     Render({});
@@ -120,9 +124,14 @@ void SummitEngine::SetActiveSwapChain(Renderer::SwapChainBase* swapChain)
     mActiveSwapChain = swapChain;
 }
 
-void SummitEngine::RenderObject(Object3D& object, Renderer::Pipeline& pipeline)
+void SummitEngine::RegisterRenderPass(const Renderer::RenderPass& renderPass)
 {
-    mRenderer->Render(object.mVertexBuffer, pipeline);
+    mRenderPasses.push_back(&renderPass);
+}
+
+void SummitEngine::RenderObject(Object3d& object, Renderer::Pipeline& pipeline)
+{
+    mRenderer->Render(object, pipeline);
     
     //mRenderer->RenderGui(mGui->mVertexBuffer, mGui->mGuiPipeline);
 }

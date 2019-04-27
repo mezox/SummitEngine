@@ -61,8 +61,8 @@ namespace Core
         {
             mCnt++;
             
-            if(mQueue.Size() > 0)
-                LOG(Debug) << "Queue Size: " << mQueue.Size();
+            //if(mQueue.Size() > 0)
+            //    LOG(Debug) << "Queue Size: " << mQueue.Size();
             
             auto funcPtr = mQueue.Pop();
             if(funcPtr)

@@ -89,11 +89,6 @@ void VulkanRenderer::Initialize()
     
     mDevice->GetDeviceQueue(0, 0, &mGraphicsQueue);
     
-    RenderPassDescriptor rpDesc;
-    rpDesc.attachments.push_back({ AttachmentType::Color, Format::B8G8R8A8, ImageLayout::Present });
-    rpDesc.attachments.push_back({ AttachmentType::Depth, Format::D32F, ImageLayout::DepthAttachment });
-    mDefaultRenderPass.Create(rpDesc, *this);
-    
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = 0;
@@ -108,11 +103,11 @@ void VulkanRenderer::Initialize()
     // Setup descriptor pool  // Pre-allocate this for whole renderer/ per render thread?
     
     VkDescriptorPoolSize samplersPool{};
-    samplersPool.descriptorCount = 10;
+    samplersPool.descriptorCount = 20;
     samplersPool.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     
     VkDescriptorPoolSize ubosPool{};
-    ubosPool.descriptorCount = 10;
+    ubosPool.descriptorCount = 20;
     ubosPool.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     
     std::vector<VkDescriptorPoolSize> poolSizes{ samplersPool, ubosPool };
@@ -121,7 +116,7 @@ void VulkanRenderer::Initialize()
     descPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     descPoolInfo.pPoolSizes = poolSizes.data();
-    descPoolInfo.maxSets = 4;        // Depends on swap chain images cnt
+    descPoolInfo.maxSets = 10;        // Depends on swap chain images cnt
     
     mDevice->CreateDescriptorPool(&descPoolInfo, nullptr, &mDescriptorPool);
     
@@ -132,9 +127,6 @@ void VulkanRenderer::Initialize()
     allocInfo.commandBufferCount = 1;
     
     mDevice->AllocateCommandBuffers(&allocInfo, &mCmdBuff);
-    
-    //mShadowMap = CreateAttachment(1280, 720, Format::D32F, ImageUsage::DepthStencilAttachment);
-    
 }
 
 DeviceObject VulkanRenderer::CreateSurface(void* nativeViewHandle) const
@@ -151,7 +143,10 @@ void VulkanRenderer::CreateSampler(const SamplerDesc& desc, DeviceObject& sample
     //TODO: Create image view
 }
 
-VkFramebuffer VulkanRenderer::CreateFramebufferImpl(uint32_t width, uint32_t height, const std::vector<VkImageView>& attachments, const VkRenderPass& renderPass) const
+FramebufferDeviceObject VulkanRenderer::CreateFramebufferImpl(const uint32_t width,
+                                                              const uint32_t height,
+                                                              const std::vector<VkImageView>& attachments,
+                                                              const VkRenderPass& renderPass) const
 {
     VkFramebufferCreateInfo framebufferInfo{};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -164,8 +159,8 @@ VkFramebuffer VulkanRenderer::CreateFramebufferImpl(uint32_t width, uint32_t hei
     
     VkFramebuffer framebuffer{ VK_NULL_HANDLE };
     mDevice->CreateFramebuffer(&framebufferInfo, nullptr, &framebuffer);
-    
-    return framebuffer;
+
+    return FramebufferDeviceObject{ framebuffer };
 }
 
 VkSampler VulkanRenderer::CreateSamplerImpl(const SamplerDesc &desc) const
@@ -251,7 +246,7 @@ void VulkanRenderer::CreateDevice(DeviceType type)
 	mDevice = std::make_shared<PAL::RenderAPI::VulkanDevice>(deviceData);
 }
 
-void VulkanRenderer::CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, const DeviceObject& surface, uint32_t width, uint32_t height)
+std::unique_ptr<SwapChainBase> VulkanRenderer::CreateSwapChain(const DeviceObject& surface, const DeviceObject& renderPass, uint32_t width, uint32_t height)
 {
     const auto& physicalDevice = mDevice->GetPhysicalDevice();
     
@@ -263,25 +258,25 @@ void VulkanRenderer::CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, 
     if(!vulkanAPI.GetPhysicalDeviceSurfaceSupportKHR(physicalDevice, 0, surfaceVisitor.surface))
     {
         LOG(Error) << "Failed to create swap chain, unsupported surface";
-        return;
+        return nullptr;
     }
     
     VkSwapchainKHR newVulkanSwapchain{ VK_NULL_HANDLE }, oldVulkanSwapchain{ VK_NULL_HANDLE };
     
     // Get old vulkan swapchain handle if this is recreate call
-    if(swapChain)
-    {
-        /*  Wait for device to finish its work, this isn't very effective, but
-            for swap chain recreation it's ok*/
-        mDevice->WaitIdle();
-        
-        VulkanSwapChainVisitor visitor;
-        
-        const auto& swapDeviceObject = swapChain->GetDeviceObject();
-        swapDeviceObject.Accept(visitor);
-        
-        oldVulkanSwapchain = visitor.swapChain;
-    }
+//    if(swapChain)
+//    {
+//        /*  Wait for device to finish its work, this isn't very effective, but
+//            for swap chain recreation it's ok*/
+//        mDevice->WaitIdle();
+//
+//        VulkanSwapChainVisitor visitor;
+//
+//        const auto& swapDeviceObject = swapChain->GetDeviceObject();
+//        swapDeviceObject.Accept(visitor);
+//
+//        oldVulkanSwapchain = visitor.swapChain;
+//    }
     
     const auto capabilities = vulkanAPI.GetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surfaceVisitor.surface);
     const auto formats = vulkanAPI.GetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surfaceVisitor.surface);
@@ -343,42 +338,37 @@ void VulkanRenderer::CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, 
         std::move(frameFence)
     };
     
-    swapChain = std::make_unique<VulkanSwapChain>(mDevice, Basify(gpuSwapChain));
-    
-    // Create framebuffers & attach them to swap chain
-    
-    const auto swapChainImages = mDevice->GetSwapchainImagesKHR(newVulkanSwapchain);
+    auto swapChain = std::make_unique<VulkanSwapChain>(mDevice, Basify(gpuSwapChain));
     
     VulkanAttachmentDeviceObject depthAttachmentDO = CreateAttachment(width, height, Format::D32F, ImageUsage::DepthStencilAttachment);
-
-    std::vector<FramebufferDeviceObject> vulkanFramebuffers;
-    vulkanFramebuffers.reserve(swapChainImages.size());
+    auto depthAttachment = std::make_shared<Attachment>(Format::D32F, AttachmentType::Depth, Basify(std::move(depthAttachmentDO)));
+    depthAttachment->SetClearValue(Graphics::Color(255, 0, 0, 0));
+    swapChain->SetDepthAttachment(depthAttachment);
     
-    const auto& gpuRenderPass = mDefaultRenderPass.GetDeviceObject();
+    // Create framebuffers & attach them to swap chain
+    const auto swapChainImages = mDevice->GetSwapchainImagesKHR(newVulkanSwapchain);
     
     RenderPassVisitor rpv;
-    gpuRenderPass.Accept(rpv);
+    renderPass.Accept(rpv);
     
     for(const auto& swapImage : swapChainImages)
     {
-        FramebufferDeviceObject framebufferDO;
-        framebufferDO.image = swapImage;
-        framebufferDO.imageView = CreateImageView(swapImage, format.format, VK_IMAGE_ASPECT_COLOR_BIT);
-        framebufferDO.framebuffer = CreateFramebufferImpl(width, height, { framebufferDO.imageView, depthAttachmentDO.view }, rpv.renderPass);
+        auto swapImageView = CreateImageView(swapImage, format.format, VK_IMAGE_ASPECT_COLOR_BIT);
+        VulkanAttachmentDeviceObject attachmentDO{ swapImage, VK_NULL_HANDLE, swapImageView };
         
-        vulkanFramebuffers.push_back(std::move(framebufferDO));
-    }
-    
-    auto depthAttachment = std::make_shared<Attachment>(Format::D32F, AttachmentType::Depth, Basify(std::move(depthAttachmentDO)));
-    swapChain->SetDepthAttachment(depthAttachment);
-    
-    for(auto& fb : vulkanFramebuffers)
-    {
-        Framebuffer framebuffer(width, height, Basify(std::move(fb)));
+        Attachment attachment(Format::B8G8R8A8, AttachmentType::Color, Basify(attachmentDO));
+        attachment.SetClearValue(Graphics::Color(20, 128, 224, 255));
+        
+        Framebuffer framebuffer;
+        framebuffer.Resize(width, height);
+        framebuffer.AddAttachment(std::make_shared<Attachment>(std::move(attachment)));
         framebuffer.AddAttachment(depthAttachment);
+        framebuffer.SetDeviceObject(Basify(CreateFramebufferImpl(width, height, { swapImageView, depthAttachmentDO.view }, rpv.renderPass)));
         
         swapChain->AddFramebuffer(std::move(framebuffer));
     }
+    
+    return swapChain;
 }
 
 void VulkanRenderer::CreateShader(DeviceObject& shader, const std::vector<uint8_t>& code) const
@@ -394,10 +384,9 @@ void VulkanRenderer::CreateShader(DeviceObject& shader, const std::vector<uint8_
     shader = VulkanShaderDeviceObject(module);
 }
 
-void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
+void VulkanRenderer::CreatePipeline(Pipeline& pipeline, const DeviceObject& renderPass)
 {
     auto& effect = pipeline.effect;
-    const auto& moduleDescriptors = effect.GetModuleDescriptors();
     
     // Prepare modules
     const auto stageInfos = PrepareModules(effect);
@@ -667,14 +656,12 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline)
     VkPipelineLayout layout{ VK_NULL_HANDLE };
     mDevice->CreatePipelineLayout(&pipelineLayoutInfo, nullptr, &layout);
     
-    const auto& gpuRenderPass = mDefaultRenderPass.GetDeviceObject();
-    
     RenderPassVisitor rpv;
-    gpuRenderPass.Accept(rpv);
+    renderPass.Accept(rpv);
     
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2;
+    pipelineInfo.stageCount = static_cast<uint32_t>(stageInfos.size());
     pipelineInfo.pStages = stageInfos.data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
@@ -856,62 +843,55 @@ void VulkanRenderer::CreateBuffer(const BufferDesc& desc, DeviceObject& bufferOb
     mResourceManager.push_back(&bufferObject);
 }
 
-void VulkanRenderer::CreateFramebuffer(const FramebufferDesc& desc, DeviceObject& framebuffer)
+void VulkanRenderer::CreateFramebuffer(Framebuffer& framebuffer, const RenderPass& renderPass)
 {
-//    VulkanFramebufferDesc& fbDesc = *(VulkanFramebufferDesc*)(desc.data);
-//    
-//    VkFramebufferCreateInfo framebufferInfo{};
-//    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-//    framebufferInfo.renderPass = mRenderPass; // TODO: Move this to desc?
-//    framebufferInfo.attachmentCount = static_cast<uint32_t>(fbDesc.attachments.size());
-//    framebufferInfo.pAttachments = fbDesc.attachments.data();
-//    framebufferInfo.width = desc.width;
-//    framebufferInfo.height = desc.height;
-//    framebufferInfo.layers = 1;
-//    
-//    VkFramebuffer fb{ VK_NULL_HANDLE };
-//    mDevice->CreateFramebuffer(&framebufferInfo, nullptr, &fb);
-//    
-//    framebuffer = FramebufferDeviceObject(); //TODO: Implement this
-}
-
-void VulkanRenderer::CreateImage(const ImageDesc& desc, DeviceObject& image)
-{
-    if(desc.memoryUsage & MemoryType::DeviceLocal)
+    std::vector<VkImageView> imageViewAttachments;
+    imageViewAttachments.reserve(framebuffer.mAttachments.size());
+    
+    for(auto attachment : framebuffer.mAttachments)
     {
-        constexpr auto stagingBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        constexpr auto stagingMemoryType = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        
-        const auto imageSize = desc.width * desc.height * GetSizeFromFormat(desc.format);
-        const auto stagingBdo = CreateBufferImpl(imageSize, stagingBufferUsage, stagingMemoryType, VK_SHARING_MODE_EXCLUSIVE);
-        
-        void* data{ nullptr };
-        mDevice->MapMemory(stagingBdo.memory, 0, imageSize, 0, &data);
-        memcpy(data, desc.data, (size_t)imageSize);
-        mDevice->UnmapMemory(stagingBdo.memory);
+        const bool isDepthAttachment = attachment->GetType() == AttachmentType::Depth;
         
         VulkanImageDesc vulkanImageDescriptor;
-        vulkanImageDescriptor.width = desc.width;
-        vulkanImageDescriptor.height = desc.height;
-        vulkanImageDescriptor.depth = desc.depth;
-        vulkanImageDescriptor.mipMapLevels = desc.mipMapLevels;
-        vulkanImageDescriptor.data = desc.data;
-        vulkanImageDescriptor.format = ConvertType(desc.format);
+        vulkanImageDescriptor.width = framebuffer.GetWidth();
+        vulkanImageDescriptor.height = framebuffer.GetHeight();
+        vulkanImageDescriptor.depth = 1;
+        vulkanImageDescriptor.mipMapLevels = 1;
+        vulkanImageDescriptor.data = nullptr;
+        vulkanImageDescriptor.format = ConvertType(attachment->GetFormat());
         vulkanImageDescriptor.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         vulkanImageDescriptor.tiling = VK_IMAGE_TILING_OPTIMAL;
         vulkanImageDescriptor.memoryProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        vulkanImageDescriptor.usage = ConvertType(desc.usage) | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        vulkanImageDescriptor.usage = isDepthAttachment ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         
-        const auto imageDeviceObject = CreateImageImpl(vulkanImageDescriptor);
+        const ImageDeviceObject imageDeviceObject = CreateImageImpl(vulkanImageDescriptor);
         
-        TransitionImageLayout(imageDeviceObject.image, vulkanImageDescriptor.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        CopyBufferToImage(stagingBdo.buffer, imageDeviceObject.image, static_cast<uint32_t>(desc.width), static_cast<uint32_t>(desc.height));
-        TransitionImageLayout(imageDeviceObject.image, vulkanImageDescriptor.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        TransitionImageLayout(imageDeviceObject.image,
+                              vulkanImageDescriptor.format,
+                              VK_IMAGE_LAYOUT_UNDEFINED,
+                              isDepthAttachment ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         
-        mDevice->DestroyBuffer(stagingBdo.buffer, nullptr);
-        mDevice->FreeMemory(stagingBdo.memory, nullptr);
+        VkImageView imageView = CreateImageView(imageDeviceObject.image,
+                                                vulkanImageDescriptor.format,
+                                                isDepthAttachment ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
+        
+        attachment->SetDeviceObject(Basify(VulkanAttachmentDeviceObject{ imageDeviceObject.image, imageDeviceObject.memory, imageView }));
+        
+        imageViewAttachments.push_back(imageView);
     }
+    
+    const auto& renderPassDO = renderPass.GetDeviceObject();
 
+    RenderPassVisitor rpVisitor;
+    renderPassDO.Accept(rpVisitor);
+    
+    auto framebufferDO = CreateFramebufferImpl(framebuffer.GetWidth(), framebuffer.GetHeight(), imageViewAttachments, rpVisitor.renderPass);
+    framebuffer.SetDeviceObject(Basify(std::move(framebufferDO)));
+}
+
+DeviceObject VulkanRenderer::CreateImage(const ImageDesc& desc)
+{
+    
 }
 
 void VulkanRenderer::CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture)
@@ -1089,11 +1069,11 @@ void VulkanRenderer::RenderGui(const VertexBufferBase& vb, const Pipeline& pipel
     }
 }
 
-void VulkanRenderer::CreateRenderPass(const RenderPassDescriptor& desc, DeviceObject& deviceObject) const
+void VulkanRenderer::CreateRenderPass(RenderPass& renderPass) const
 {
-    _ASSERT(!desc.attachments.empty() && "No attachments defined for render pass");
+    _ASSERT(!renderPass.mAttachmentDescs.empty() && "No attachments defined for render pass");
     
-    const auto numAttachments = desc.attachments.size();
+    const auto numAttachments = renderPass.mAttachmentDescs.size();
     
     std::vector<VkAttachmentDescription> attachments;
     attachments.reserve(numAttachments);
@@ -1103,7 +1083,7 @@ void VulkanRenderer::CreateRenderPass(const RenderPassDescriptor& desc, DeviceOb
     
     for(uint32_t id{ 0 }; id < numAttachments; ++id)
     {
-        const auto& attachmentDesc = desc.attachments[id];
+        const auto& attachmentDesc = renderPass.mAttachmentDescs[id];
         
         VkAttachmentDescription attachment{};
         attachment.flags = 0;
@@ -1152,10 +1132,10 @@ void VulkanRenderer::CreateRenderPass(const RenderPassDescriptor& desc, DeviceOb
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
 
-    deviceObject = RenderPassDeviceObject{ mDevice->CreateManagedRenderPass(&renderPassInfo, nullptr) };
+    renderPass.SetDeviceObject(Basify(RenderPassDeviceObject{ mDevice->CreateManagedRenderPass(&renderPassInfo, nullptr) }));
 }
 
-VkImageView VulkanRenderer::CreateImageView(const VkImage& image, const VkFormat& format, const VkImageAspectFlags flags)
+VkImageView VulkanRenderer::CreateImageView(const VkImage& image, const VkFormat& format, const VkImageAspectFlags flags) const
 {
     VkImageViewCreateInfo imageViewCreateInfo{};
     imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1296,11 +1276,8 @@ std::vector<VkPipelineShaderStageCreateInfo> VulkanRenderer::PrepareModules(Effe
     return stageInfos;
 }
 
-void VulkanRenderer::BeginCommandRecording(SwapChainBase* swapChain)
+CmdRecordResult VulkanRenderer::BeginCommandRecording()
 {
-    const auto& renderPassDO = mDefaultRenderPass.GetDeviceObject();
-    const auto& activeFrameBuffer = swapChain->GetActiveFramebuffer();
-    
     mDevice->FreeCommandBuffers(mCommandPool, 1, &mCmdBuff);
     
     VkCommandBufferAllocateInfo allocInfo{};
@@ -1311,26 +1288,43 @@ void VulkanRenderer::BeginCommandRecording(SwapChainBase* swapChain)
     
     mDevice->AllocateCommandBuffers(&allocInfo, &mCmdBuff);
     
-    const auto& activeFramebuffer = swapChain->GetActiveFramebuffer();
-    const float viewWidth = static_cast<float>(activeFrameBuffer.GetWidth());
-    const float viewHeight = static_cast<float>(activeFrameBuffer.GetHeight());
-    
     mCmdList.push_back(BeginCommand(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT));
-    mCmdList.push_back(BeginRenderPass({ viewWidth, viewHeight }, renderPassDO, activeFrameBuffer.GetDeviceObject()));
+    
+    return CmdRecordResult::Success;
+}
+
+CmdRecordResult VulkanRenderer::BeginRenderPass(const RenderPass& renderPass)
+{
+    const auto* activeFramebufferPtr = renderPass.GetActiveFramebuffer();
+    if(!activeFramebufferPtr)
+        return CmdRecordResult::RPFramebufferUnavailable;
+    
+    mCmdList.push_back(Vulkan::BeginRenderPass(renderPass));
+    
+    const uint32_t width = activeFramebufferPtr->GetWidth();
+    const uint32_t height = activeFramebufferPtr->GetHeight();
+    
+    mCmdList.push_back(SetViewport(width, height));
     
     VkRect2D scissorRect;
     scissorRect.offset.x = 0;
     scissorRect.offset.y = 0;
-    scissorRect.extent.width = static_cast<uint32_t>(viewWidth);
-    scissorRect.extent.height = static_cast<uint32_t>(viewHeight);
+    scissorRect.extent.width = width;
+    scissorRect.extent.height = height;
     
-    mCmdList.push_back(SetViewport(viewWidth, viewHeight));
     mCmdList.push_back(SetScissor(std::move(scissorRect)));
+    
+    return CmdRecordResult::Success;
 }
 
-void VulkanRenderer::EndCommandRecording(SwapChainBase* swapChain)
+CmdRecordResult VulkanRenderer::EndRenderPass()
 {
-    mCmdList.push_back(EndRenderPass());
+    mCmdList.push_back(Vulkan::EndRenderPass());
+    return CmdRecordResult::Success;
+}
+
+CmdRecordResult VulkanRenderer::EndCommandRecording(SwapChainBase* swapChain)
+{
     mCmdList.push_back(EndCommand());
     
     for(const auto& cmd : mCmdList)
@@ -1360,4 +1354,6 @@ void VulkanRenderer::EndCommandRecording(SwapChainBase* swapChain)
     submitInfo.pSignalSemaphores = &swapChainVisitor.renderFinishedSemaphore;
     
     mDevice->QueueSubmit(mGraphicsQueue, 1, &submitInfo, swapChainVisitor.frameFence);
+    
+    return CmdRecordResult::Success;
 }

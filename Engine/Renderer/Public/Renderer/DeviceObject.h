@@ -9,7 +9,6 @@ namespace Renderer
 {
     class PipelineDeviceObject;
     class BufferDeviceObject;
-    class FramebufferDeviceObject;
     class VulkanShaderDeviceObject;
     class TextureDeviceObject;
     class VulkanRenderPassDeviceObject;
@@ -27,6 +26,7 @@ namespace Renderer
         struct CommandBufferDeviceObject;
         struct FrameSyncDeviceObject;
         struct SwapChainDeviceObject;
+        struct FramebufferDeviceObject;
     }
     
     class IDeviceObjectVisitor
@@ -36,9 +36,9 @@ namespace Renderer
         virtual void Visit(const VulkanRenderPassDeviceObject& object) = 0;
         virtual void Visit(const PipelineDeviceObject& object) = 0;
         virtual void Visit(const BufferDeviceObject& object) = 0;
-        virtual void Visit(const FramebufferDeviceObject& object) = 0;
         virtual void Visit(const TextureDeviceObject& object) = 0;
         virtual void Visit(const VulkanAttachmentDeviceObject& object) = 0;
+        virtual void Visit(const Vulkan::FramebufferDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::SurfaceDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::SwapChainDeviceObject& object) = 0;
         virtual void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) = 0;
@@ -58,9 +58,9 @@ namespace Renderer
         virtual void Visit(VulkanRenderPassDeviceObject& object) = 0;
         virtual void Visit(PipelineDeviceObject& object) = 0;
         virtual void Visit(BufferDeviceObject& object) = 0;
-        virtual void Visit(FramebufferDeviceObject& object) = 0;
         virtual void Visit(TextureDeviceObject& object) = 0;
         virtual void Visit(VulkanAttachmentDeviceObject& object) = 0;
+        virtual void Visit(Vulkan::FramebufferDeviceObject& object) = 0;
         virtual void Visit(Vulkan::SurfaceDeviceObject& object) = 0;
         virtual void Visit(Vulkan::SwapChainDeviceObject& object) = 0;
         virtual void Visit(Vulkan::DescriptorSetLayoutDeviceObject& object) = 0;

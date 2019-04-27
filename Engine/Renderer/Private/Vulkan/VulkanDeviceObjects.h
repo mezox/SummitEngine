@@ -74,6 +74,11 @@ namespace Renderer
         {
             MovableHandle<VkSurfaceKHR> surface;
         };
+        
+        struct FramebufferDeviceObject
+        {
+            MovableHandle<VkFramebuffer> framebuffer;
+        };
     }
     
     class VulkanShaderDeviceObject
@@ -156,17 +161,6 @@ namespace Renderer
         VkSampler sampler{ VK_NULL_HANDLE };
     };
     
-    class FramebufferDeviceObject
-    {
-    public:
-        FramebufferDeviceObject() = default;
-        
-    public:
-        VkFramebuffer framebuffer{ VK_NULL_HANDLE };
-        VkImageView imageView{ VK_NULL_HANDLE };
-        VkImage image{ VK_NULL_HANDLE };
-    };
-    
     class DeviceObjectVisitorBase : public IDeviceObjectVisitor
     {
     public:
@@ -174,9 +168,9 @@ namespace Renderer
         void Visit(const VulkanRenderPassDeviceObject& object) override {}
         void Visit(const PipelineDeviceObject& object) override {}
         void Visit(const BufferDeviceObject& object) override {}
-        void Visit(const FramebufferDeviceObject& object) override {}
         void Visit(const TextureDeviceObject& object) override {}
         void Visit(const VulkanAttachmentDeviceObject& object) override {}
+        void Visit(const Vulkan::FramebufferDeviceObject& object) override {}
         void Visit(const Vulkan::SurfaceDeviceObject& object) override {}
         void Visit(const Vulkan::SwapChainDeviceObject& object) override {}
         void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
@@ -196,9 +190,9 @@ namespace Renderer
         void Visit(VulkanRenderPassDeviceObject& object) override {}
         void Visit(PipelineDeviceObject& object) override {}
         void Visit(BufferDeviceObject& object) override {}
-        void Visit(FramebufferDeviceObject& object) override {}
         void Visit(TextureDeviceObject& object) override {}
         void Visit(VulkanAttachmentDeviceObject& object) override {}
+        void Visit(Vulkan::FramebufferDeviceObject& object) override {}
         void Visit(Vulkan::SurfaceDeviceObject& object) override {}
         void Visit(Vulkan::SwapChainDeviceObject& object) override {}
         void Visit(Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
@@ -218,9 +212,9 @@ namespace Renderer
         void Visit(const VulkanRenderPassDeviceObject& object) override {}
         void Visit(const PipelineDeviceObject& object) override { ++buffers; }
         void Visit(const BufferDeviceObject& object) override { ++pipelines; }
-        void Visit(const FramebufferDeviceObject& object) override { ++images; ++imageViews; ++framebuffers; }
         void Visit(const TextureDeviceObject& object) override {}
         void Visit(const VulkanAttachmentDeviceObject& object) override {}
+        void Visit(const Vulkan::FramebufferDeviceObject& object) override {}
         void Visit(const Vulkan::SurfaceDeviceObject& object) override {}
         void Visit(const Vulkan::SwapChainDeviceObject& object) override {}
         void Visit(const Vulkan::DescriptorSetLayoutDeviceObject& object) override{}
@@ -295,16 +289,12 @@ namespace Renderer
     class FramebufferObjectVisitor : public DeviceObjectVisitorBase
     {
     public:
-        void Visit(const FramebufferDeviceObject& object) override
+        void Visit(const Vulkan::FramebufferDeviceObject& object) override
         {
-            image = object.image;
-            view = object.imageView;
-            framebuffer = object.framebuffer;
+            framebuffer = object.framebuffer.Get();
         }
         
     public:
-        VkImage image{ VK_NULL_HANDLE };
-        VkImageView view{ VK_NULL_HANDLE };
         VkFramebuffer framebuffer{ VK_NULL_HANDLE };
     };
     

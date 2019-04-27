@@ -4,8 +4,9 @@
 
 namespace Math
 {
-	constexpr float MATH_PI = 3.14159265;
-	constexpr float MATH_2PI = 2 * MATH_PI;
+	constexpr float MATH_PI = 3.14159265f;
+	constexpr float MATH_2PI = 2.0f * MATH_PI;
+    constexpr float MATH_HALF_PI = 0.5f * MATH_PI;
 
 	template<typename T>
 	constexpr T DegreesToRadians(const T angle) { return static_cast<T>(angle * MATH_PI / 180); }

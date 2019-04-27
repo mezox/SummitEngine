@@ -8,121 +8,60 @@
 #include <Math/Math.h>
 #include <Core/TupleHash.h>
 
-#include <iostream>
+#include "Cube.h"
+#include "Chalet.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include <iostream>
 
 using namespace Demo;
 using namespace Summit;
 using namespace Renderer;
 using namespace Application;
 
-struct Vertex
-{
-    bool operator==(const Vertex& other) const {
-        return  position.x == other.position.x &&
-        position.y == other.position.y &&
-        position.z == other.position.z &&
-        color.x == other.color.x &&
-        color.y == other.color.y &&
-        color.z == other.color.z &&
-        texCoord.x == other.texCoord.x &&
-        texCoord.y == other.texCoord.y;
-    }
-    
-    Vector3f position;
-    Vector3f color;
-    Vector2f texCoord;
-};
-
-namespace std
-{
-    template<>
-    struct hash<Vertex>
-    {
-        size_t operator()(Vertex const& vertex) const
-        {
-            auto t = std::tie(vertex.position, vertex.color, vertex.texCoord);
-            return std::hash<decltype(t)>()(t);
-        }
-    };
-}
-
 #define LOG_MODULE_ID LOG_MODULE_4BYTE(' ','A','P','P')
 
 SummitDemo::SummitDemo(SummitEngine& engine)
 {
+    constexpr uint32_t defaultViewWidth = 1280;
+    constexpr uint32_t defaultViewHeight = 720;
+    
     mEngine = &engine;
     
-    mWindow = std::make_unique<Window>("SummitEngine", 1280, 720);
-    mWindow->CreateView(1280, 720, 0, 0);
+    auto& renderer = mEngine->GetRenderer();
     
-    PrepareChalet();
+    // ----- setup depth pre pass
+    mDepthPrePass.AddAttachment(AttachmentType::Depth, Format::D32F, ImageLayout::DepthAttachment);
+    renderer.CreateRenderPass(mDepthPrePass);
 
-
-    mModel.MakeIdentity();
+    mDepthPrePassFB.Resize(defaultViewWidth, defaultViewHeight);
     
-    mLastCursorPosition = Vector2<uint16_t>(640, 360);
+    Attachment depthAttachment(Format::D32F, AttachmentType::Depth);
+    depthAttachment.SetClearValue(Graphics::Color(255, 0, 0, 0));
+    mDepthPrePassFB.AddAttachment(std::make_shared<Attachment>(std::move(depthAttachment)));
+    renderer.CreateFramebuffer(mDepthPrePassFB, mDepthPrePass);
+    
+    mDepthPrePass.SetActiveFramebuffer(mDepthPrePassFB);
+    // ----- end of setup of depth pre pass
+    
+    mDefaultRenderPass.AddAttachment(AttachmentType::Color, Format::B8G8R8A8, ImageLayout::Present);
+    mDefaultRenderPass.AddAttachment(AttachmentType::Depth, Format::D32F, ImageLayout::DepthAttachment);
+    renderer.CreateRenderPass(mDefaultRenderPass);
+    
+    mWindow = std::make_unique<Window>("SummitEngine", defaultViewWidth, defaultViewHeight);
+    mWindow->CreateView(defaultViewWidth, defaultViewHeight, 0, 0);
+    
+    const auto viewPtr = mWindow->GetView();
+    viewPtr->SetSwapChain(renderer.CreateSwapChain(viewPtr->GetDeviceObject(), mDefaultRenderPass.GetDeviceObject(), viewPtr->GetWidth(), viewPtr->GetHeight()));
+    
+//    mEngine->RegisterRenderPass(mDepthPrePass);
+//    mEngine->RegisterRenderPass(mDefaultRenderPass);
+    
+    PrepareCube();
 }
 
 void SummitDemo::PrepareCube()
 {
-    auto& positionStream = triangle.mVertexBuffer.GetPositionDataStream();
-    auto& colorStream = triangle.mVertexBuffer.GetColorDataStream();
-    auto& indexStream = triangle.mVertexBuffer.GetIndexDataStream();
-    auto& texCoordStream = triangle.mVertexBuffer.GetTexCoordDataStream();
-    
-    auto& positionData = positionStream.GetData();
-    auto& colorData = colorStream.GetData();
-    auto& indexData = indexStream.GetData();
-    auto& texCoordData = texCoordStream.GetData();
-    
-    // Quad 1
-    positionData.push_back({ -0.5f, -0.5f, -0.5f });
-    positionData.push_back({ 0.5f, -0.5f, -0.5f });
-    positionData.push_back({ 0.5f, -0.5f, 0.5f });
-    positionData.push_back({ -0.5f, -0.5f, 0.5f });
-    
-    // Quad 2
-    positionData.push_back({ -0.5f, 0.5f, -0.5f });
-    positionData.push_back({ 0.5f, 0.5f, -0.5f });
-    positionData.push_back({ 0.5f, 0.5f, 0.5f });
-    positionData.push_back({ -0.5f, 0.5f, 0.5f });
-    
-    colorData.push_back({ 1.0f, 0.0f, 0.0f });
-    colorData.push_back({ 0.0f, 1.0f, 0.0f });
-    colorData.push_back({ 0.0f, 0.0f, 1.0f });
-    colorData.push_back({ 1.0f, 0.0f, 1.0f });
-    
-    colorData.push_back({ 1.0f, 0.0f, 0.0f });
-    colorData.push_back({ 0.0f, 1.0f, 0.0f });
-    colorData.push_back({ 0.0f, 0.0f, 1.0f });
-    colorData.push_back({ 1.0f, 0.0f, 1.0f });
-    
-    texCoordData.push_back({ 1.0f, 0.0f });
-    texCoordData.push_back({ 0.0f, 0.0f });
-    texCoordData.push_back({ 0.0f, 1.0f });
-    texCoordData.push_back({ 1.0f, 1.0f });
-    
-    texCoordData.push_back({ 1.0f, 0.0f });
-    texCoordData.push_back({ 0.0f, 0.0f });
-    texCoordData.push_back({ 0.0f, 1.0f });
-    texCoordData.push_back({ 1.0f, 1.0f });
-    
-    indexData = {
-        0, 1, 2, 2, 3, 0, // bottom
-        4, 5, 6, 6, 7, 4, // top
-        4, 7, 3, 3, 0, 4, // left
-        6, 5, 1, 1, 2, 6, // right
-        4, 5, 1, 1, 0, 4, // back
-        7, 6, 2, 2, 3, 7  // forward
-    };
-    
-    positionStream.Lock(CommitCommand::Commit);
-    colorStream.Lock(CommitCommand::Commit);
-    texCoordStream.Lock(CommitCommand::Commit);
-    indexStream.Lock(CommitCommand::Commit);
+    mObject = std::make_unique<Cube>();
     
     auto& renderer = Renderer::RendererLocator::GetRenderer();
     
@@ -151,72 +90,18 @@ void SummitDemo::PrepareCube()
     pipeline.effect.AddTexture(ModuleStage::Fragment, 1, *mTexture.get());
     
     pipeline.depthTestEnabled = true;
-    pipeline.Create();
+    renderer.CreatePipeline(pipeline, mDefaultRenderPass.GetDeviceObject());
+    
+    depthPrePassPipeline.effect.AddModule(ModuleStage::Vertex, "/Users/tomaskubovcik/Dev/SummitEngine/depth_pre_pass.spv");
+    depthPrePassPipeline.effect.AddAttribute(Format::R32G32B32F, 0);
+    depthPrePassPipeline.effect.AddUniformBuffer(ModuleStage::Vertex, 0, mUniformBuffer);
+    depthPrePassPipeline.depthTestEnabled = true;
+    renderer.CreatePipeline(depthPrePassPipeline, mDepthPrePass.GetDeviceObject());
 }
 
 void SummitDemo::PrepareChalet()
 {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
-    
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "/Users/tomaskubovcik/Dev/SummitEngine/chalet.obj"))
-    {
-        throw std::runtime_error(warn + err);
-    }
-    
-    auto& positionStream = mChalet.mVertexBuffer.GetPositionDataStream();
-    auto& colorStream = mChalet.mVertexBuffer.GetColorDataStream();
-    auto& indexStream = mChalet.mVertexBuffer.GetIndexDataStream();
-    auto& texCoordStream = mChalet.mVertexBuffer.GetTexCoordDataStream();
-    
-    auto& positionData = positionStream.GetData();
-    auto& colorData = colorStream.GetData();
-    auto& indexData = indexStream.GetData();
-    auto& texCoordData = texCoordStream.GetData();
-    
-    std::vector<Vertex> vertices;
-    std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
-    
-    for (const auto& shape : shapes)
-    {
-        for (const auto& index : shape.mesh.indices)
-        {
-            Vertex v;
-            v.position = Vector3f({
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]});
-            
-            v.texCoord = Vector2f({
-                attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-            });
-            
-            v.color = Vector3f({ 1.0f, 1.0f, 1.0f });
-
-            if (uniqueVertices.count(v) == 0)
-            {
-                uniqueVertices[v] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(v);
-            }
-            
-            indexData.push_back(uniqueVertices[v]);
-        }
-    }
-    
-    for(const auto& vertex : vertices)
-    {
-        positionData.push_back(vertex.position);
-        colorData.push_back(vertex.color);
-        texCoordData.push_back(vertex.texCoord);
-    }
-    
-    positionStream.Lock(CommitCommand::Commit);
-    colorStream.Lock(CommitCommand::Commit);
-    texCoordStream.Lock(CommitCommand::Commit);
-    indexStream.Lock(CommitCommand::Commit);
+    mObject = std::make_unique<Chalet>();
     
     auto& renderer = Renderer::RendererLocator::GetRenderer();
     
@@ -245,7 +130,7 @@ void SummitDemo::PrepareChalet()
     pipeline.effect.AddTexture(ModuleStage::Fragment, 1, *mTexture.get());
     
     pipeline.depthTestEnabled = true;
-    pipeline.Create();
+    renderer.CreatePipeline(pipeline, mDefaultRenderPass.GetDeviceObject());
 }
 
 void SummitDemo::PushToEngine(SummitEngine& engine)
@@ -284,15 +169,30 @@ void SummitDemo::UpdateCamera()
     static auto startTime = std::chrono::high_resolution_clock::now();
     
     auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    //float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     
     const auto framebufferWidth = mWindow->GetView()->GetWidth();
     const auto framebufferHeight = mWindow->GetView()->GetHeight();
-    
-    mModel.MakeIdentity();
     //mModel.RotateY(time * Math::DegreesToRadians(40.0f));
     
     mCamera.Update(framebufferWidth, framebufferHeight);
+    
+    struct MVP
+    {
+        Matrix4 model;
+        Matrix4 view;
+        Matrix4 projection;
+    };
+    
+    Matrix4 modelMatrix;
+    modelMatrix.MakeIdentity();
+    
+    MVP mvp;
+    mvp.model = modelMatrix;
+    mvp.view = mCamera.GetViewMatrix();
+    mvp.projection = mCamera.GetProjectionMatrix();
+    
+    mEngine->GetRenderer().MapMemory(mUniformBuffer.deviceObject, mUniformBuffer.dataSize, &mvp);
 }
 
 void SummitDemo::OnEarlyUpdate(const FrameData& data)
@@ -312,24 +212,15 @@ void SummitDemo::OnLateUpdate(const FrameData& data)
 
 void SummitDemo::OnRender(const FrameData& data)
 {
-    auto& renderer = RendererLocator::GetRenderer();
+    mDepthPrePass.SetActiveFramebuffer(mDepthPrePassFB);
+    mEngine->GetRenderer().BeginRenderPass(mDepthPrePass);
+    mEngine->RenderObject(*mObject, depthPrePassPipeline);
+    mEngine->GetRenderer().EndRenderPass();
     
-    struct MVP
-    {
-        Matrix4 model;
-        Matrix4 view;
-        Matrix4 projection;
-    };
-    
-    // TODO move MVP struct to class as member, this is unnecesary copy every frame I know
-    MVP mvp;
-    mvp.model = mModel;
-    mvp.view = mCamera.GetViewMatrix();
-    mvp.projection = mCamera.GetProjectionMatrix();
-    
-    renderer.MapMemory(mUniformBuffer.deviceObject, mUniformBuffer.dataSize, &mvp);
-    
-    mEngine->RenderObject(mChalet, pipeline);
+    mDefaultRenderPass.SetActiveFramebuffer(mWindow->GetView()->GetSwapChain()->GetActiveFramebuffer());
+    mEngine->GetRenderer().BeginRenderPass(mDefaultRenderPass);
+    mEngine->RenderObject(*mObject, pipeline);
+    mEngine->GetRenderer().EndRenderPass();
 }
 
 void SummitDemo::OnUIRender(const FrameData& data)

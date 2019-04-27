@@ -9,10 +9,10 @@ using namespace PAL::RenderAPI;
 
 View::View(uint16_t width, uint16_t height, void* nativeView)
     : DeviceResource(RendererLocator::GetRenderer().CreateSurface(nativeView))
+    , mWidth(width)
+    , mHeight(height)
     , mNativeViewHandle(nativeView)
-{
-    RendererLocator::GetRenderer().CreateSwapChain(mSwapChain, GetDeviceObject(), width, height);
-}
+{}
 
 View::~View()
 {
@@ -21,10 +21,10 @@ View::~View()
 
 void View::OnResize(uint16_t width, uint16_t height)
 {
-    if(mSwapChain)
-    {
-        RendererLocator::GetRenderer().CreateSwapChain(mSwapChain, GetDeviceObject(), width, height);
-    }
+//    if(mSwapChain)
+//    {
+//        RendererLocator::GetRenderer().CreateSwapChain(mSwapChain, GetDeviceObject(), width, height);
+//    }
 }
 
 bool View::AcquireImage()
@@ -34,10 +34,15 @@ bool View::AcquireImage()
 
 const uint32_t View::GetWidth() const noexcept
 {
-    return mSwapChain->GetActiveFramebuffer().GetWidth();
+    return mWidth;
 }
 
 const uint32_t View::GetHeight() const noexcept
 {
-    return mSwapChain->GetActiveFramebuffer().GetHeight();
+    return mHeight;
+}
+
+void View::SetSwapChain(std::unique_ptr<SwapChainBase> swapChain)
+{
+    mSwapChain = std::move(swapChain);
 }

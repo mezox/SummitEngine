@@ -6,6 +6,7 @@
 #include <Renderer/Resources/Buffer.h>
 #include <Renderer/Image.h>
 #include <Renderer/Camera.h>
+#include <Renderer/Object3D.h>
 #include <Math/Matrix4.h>
 #include <Math/Vector2.h>
 
@@ -40,23 +41,21 @@ namespace Demo
         void PrepareChalet();
         
     private:
-        Renderer::Object3D triangle;
         Renderer::Pipeline pipeline;
+        Renderer::Pipeline depthPrePassPipeline;
+        
         std::unique_ptr<Application::Window> mWindow;
         
-        Renderer::Object3D mChalet;
-        Renderer::Pipeline mChaletPipeline;
-        std::unique_ptr<Renderer::Image> mChaletTexture;
+        std::unique_ptr<Renderer::Object3d> mObject;
+        std::unique_ptr<Renderer::Image> mTexture;
+        Renderer::Framebuffer mDepthPrePassFB;
         
-        Matrix4 mModel;
-        //Matrix4 mView;
-        //Matrix4 mProjection;
+        Renderer::RenderPass mDepthPrePass;
+        Renderer::RenderPass mDefaultRenderPass;
         
         Renderer::Camera mCamera;
-        Vector2<uint16_t> mLastCursorPosition;
         
         Renderer::Buffer mUniformBuffer;
-        std::unique_ptr<Renderer::Image> mTexture;
         
         Summit::SummitEngine* mEngine{ nullptr };
     };

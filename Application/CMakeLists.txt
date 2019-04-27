@@ -6,6 +6,8 @@ include_directories(".")
 
 # platform agnostic source files
 set(SHARED_SOURCES
+	${CMAKE_CURRENT_SOURCE_DIR}/Cube.h
+	${CMAKE_CURRENT_SOURCE_DIR}/Chalet.h
 	${CMAKE_CURRENT_SOURCE_DIR}/tiny_obj_loader.h
 	${CMAKE_CURRENT_SOURCE_DIR}/SummitDemo.h
 	${CMAKE_CURRENT_SOURCE_DIR}/SummitDemo.cpp

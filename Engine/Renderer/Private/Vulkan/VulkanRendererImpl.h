@@ -25,18 +25,19 @@ namespace Renderer
 		void Deinitialize() override;
 
         DeviceObject CreateSurface(void* nativeViewHandle) const override;
-        void CreateSwapChain(std::unique_ptr<SwapChainBase>& swapChain, const DeviceObject& surface, uint32_t width, uint32_t height) override;
+        std::unique_ptr<SwapChainBase> CreateSwapChain(const DeviceObject& surface, const DeviceObject& renderPass, uint32_t width, uint32_t height) override;
+        
         void CreateShader(DeviceObject& shader, const std::vector<uint8_t>& code) const override;
-        void CreatePipeline(Pipeline& pipeline) override;
-        void CreateFramebuffer(const FramebufferDesc& desc, DeviceObject& framebuffer) override;
+        void CreatePipeline(Pipeline& pipeline, const DeviceObject& renderPass) override;
+        void CreateFramebuffer(Framebuffer& desc, const RenderPass& renderPass) override;
         void CreateBuffer(const BufferDesc& desc, DeviceObject& buffer) override;
-        void CreateImage(const ImageDesc& desc, DeviceObject& image) override;
+        DeviceObject CreateImage(const ImageDesc& desc) override;
         void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) override;
         void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) override;
         DeviceObject CreateSemaphore(const SemaphoreDescriptor& desc) const override;
         DeviceObject CreateFence(const FenceDescriptor& desc) const override;
         DeviceObject CreateEvent(const EventDescriptor& desc) const override;
-        void CreateRenderPass(const RenderPassDescriptor& desc, DeviceObject& deviceObject) const override;
+        void CreateRenderPass(RenderPass& renderPass) const override;
         
         void MapMemory(const DeviceObject& deviceObject, uint32_t size, void* data) override;
         void UnmapMemory(const DeviceObject& deviceObject) const override;
@@ -46,15 +47,16 @@ namespace Renderer
         
         void DestroyDeviceObject(DeviceObject& buffer) const override;
         
-        
-        void BeginCommandRecording(SwapChainBase* swapChain) override;
-        void EndCommandRecording(SwapChainBase* swapChain) override;
+        CmdRecordResult BeginCommandRecording() override;
+        CmdRecordResult BeginRenderPass(const RenderPass& renderPass) override;
+        CmdRecordResult EndRenderPass() override;
+        CmdRecordResult EndCommandRecording(SwapChainBase* swapChain) override;
         
         
         const std::vector<DeviceObject>& GetCommandBuffers() const { return mCommandBuffers; }
         const VkQueue GetGraphicsQueue() const { return mGraphicsQueue; }
         
-        VkImageView CreateImageView(const VkImage& image, const VkFormat& format, VkImageAspectFlags flags);
+        [[nodiscard]] VkImageView CreateImageView(const VkImage& image, const VkFormat& format, VkImageAspectFlags flags) const;
         
         VulkanAttachmentDeviceObject CreateAttachment(uint32_t width, uint32_t height, Format format, ImageUsage usage);
 
@@ -71,9 +73,9 @@ namespace Renderer
         
         
     private:
-        [[nodiscard]] BufferDeviceObject    CreateBufferImpl(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkSharingMode sharingMode) const;
-        [[nodiscard]] ImageDeviceObject     CreateImageImpl(const VulkanImageDesc& descriptor) const;
-        [[nodiscard]] VkFramebuffer         CreateFramebufferImpl(uint32_t width, uint32_t height, const std::vector<VkImageView>& attachments, const VkRenderPass& renderPass) const;
+        [[nodiscard]] BufferDeviceObject        CreateBufferImpl(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkSharingMode sharingMode) const;
+        [[nodiscard]] ImageDeviceObject         CreateImageImpl(const VulkanImageDesc& descriptor) const;
+        [[nodiscard]] Vulkan::FramebufferDeviceObject CreateFramebufferImpl(uint32_t width, uint32_t height, const std::vector<VkImageView>& attachments, const VkRenderPass& renderPass) const;
         [[nodiscard]] VkSampler             CreateSamplerImpl(const SamplerDesc& descriptor) const;
         
 	private:
@@ -88,10 +90,6 @@ namespace Renderer
         std::vector<DeviceObject*> mResourceManager;
         
         std::shared_ptr<CommandBufferFactory> mCommandBufferFactory;
-        
-        RenderPass mDefaultRenderPass;
-        
-        //VulkanAttachmentDeviceObject mShadowMap;
 
         VkCommandBuffer mCmdBuff;
         std::vector<Command> mCmdList;

@@ -49,6 +49,7 @@ auto TypeLinkerTempl<Renderer::ImageLayout, VkImageLayout>::operator()(const fro
         case Renderer::ImageLayout::Present: return to_t{ VK_IMAGE_LAYOUT_PRESENT_SRC_KHR };
         case Renderer::ImageLayout::ColorAttachment: return to_t{ VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
         case Renderer::ImageLayout::DepthAttachment: return to_t{ VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+        case Renderer::ImageLayout::ShaderReadOnly: return to_t{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
     }
 }
 

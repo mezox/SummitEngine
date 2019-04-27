@@ -80,18 +80,34 @@ namespace Renderer::Vulkan
     class BeginRenderPass final : public VulkanCommand<BeginRenderPass>
     {
     public:
-        BeginRenderPass(const Vector2f& viewport, const DeviceObject& renderPass, const DeviceObject& framebuffer)
-            : mViewPort(viewport)
+        BeginRenderPass(const RenderPass& renderPass)
         {
-            RenderPassVisitor rpv;
-            renderPass.Accept(rpv);
+            const auto& framebuffer = *renderPass.GetActiveFramebuffer();
             
-            mRenderPass = rpv.renderPass;
+            mViewPort = Vector2f(framebuffer.GetWidth(), framebuffer.GetHeight());
             
-            FramebufferObjectVisitor fbv;
-            framebuffer.Accept(fbv);
+            RenderPassVisitor rpVisitor;
+            renderPass.GetDeviceObject().Accept(rpVisitor);
             
-            mFrameBuffer = fbv.framebuffer;
+            mRenderPass = rpVisitor.renderPass;
+            
+            FramebufferObjectVisitor fbVisitor;
+            framebuffer.GetDeviceObject().Accept(fbVisitor);
+            
+            mFrameBuffer = fbVisitor.framebuffer;
+            
+            const auto clearValues = framebuffer.GetClearValues();
+            mClearValues.reserve(clearValues.size());
+            
+            for(const auto& clearValue: clearValues)
+            {
+                VkClearValue colorClearValue;
+                colorClearValue.color.float32[0] = clearValue.R() / 255.0f;
+                colorClearValue.color.float32[1] = clearValue.G() / 255.0f;
+                colorClearValue.color.float32[2] = clearValue.B() / 255.0f;
+                colorClearValue.color.float32[3] = clearValue.A() / 255.0f;
+                mClearValues.push_back(std::move(colorClearValue));
+            }
         }
         
         [[nodiscard]] std::string GetDescription() const noexcept
@@ -101,18 +117,16 @@ namespace Renderer::Vulkan
         
         void OnExecute(const PAL::RenderAPI::VulkanDevice& device, const VkCommandBuffer& cmdBuffer) const
         {
-            std::array<VkClearValue, 2> clearValues{};
-            clearValues[0].color = { 0.1f, 0.5f, 0.85f, 1.0f };
-            clearValues[1].depthStencil = {1.0f, 0};
-            
             VkRenderPassBeginInfo renderPassInfo{};
             renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderPassInfo.renderPass = mRenderPass;
             renderPassInfo.framebuffer = mFrameBuffer;
-            renderPassInfo.renderArea.offset = { 0, 0 };
-            renderPassInfo.renderArea.extent = { (uint32_t)mViewPort.x, (uint32_t)mViewPort.y };
-            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-            renderPassInfo.pClearValues = clearValues.data();
+            renderPassInfo.renderArea.offset.x = 0;
+            renderPassInfo.renderArea.offset.y = 0;
+            renderPassInfo.renderArea.extent.width = static_cast<uint32_t>(mViewPort.x);
+            renderPassInfo.renderArea.extent.height = static_cast<uint32_t>(mViewPort.y);
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(mClearValues.size());
+            renderPassInfo.pClearValues = mClearValues.data();
             
             device.BeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
@@ -121,6 +135,7 @@ namespace Renderer::Vulkan
         Vector2f mViewPort;
         VkRenderPass mRenderPass;
         VkFramebuffer mFrameBuffer;
+        std::vector<VkClearValue> mClearValues;     //TODO: This should not use dynamic structures
     };
     
     class EndRenderPass final : public VulkanCommand<EndRenderPass>

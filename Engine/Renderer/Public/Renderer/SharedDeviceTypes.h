@@ -4,6 +4,43 @@
 #include <cstdint>
 #include <stdexcept>
 
+namespace Graphics
+{
+    class Color
+    {
+    public:
+        constexpr Color() = default;
+        constexpr explicit Color(const uint32_t color) : mColor(color) {}
+        constexpr explicit Color(const float value) : mColor(static_cast<uint32_t>(value)) {}
+        
+        constexpr Color(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
+        {
+            mColor = ((r | static_cast<uint16_t>(g) << 8)) | ((static_cast<uint32_t>(b)) << 16) | ((static_cast<uint32_t>(a) << 24));
+        }
+        
+        template<typename T = uint8_t>
+        constexpr T R() const { return static_cast<T>(static_cast<uint8_t>(mColor)); }
+        
+        template<typename T = uint8_t>
+        constexpr T G() const { return static_cast<T>(static_cast<uint16_t>(mColor) >> 8); }
+        
+        template<typename T = uint8_t>
+        constexpr T B() const { return static_cast<T>(static_cast<uint8_t>(static_cast<uint16_t>(mColor >> 16))); }
+        
+        template<typename T = uint8_t>
+        constexpr T A() const { return static_cast<T>(static_cast<uint8_t>(mColor >> 24)); }
+        
+        constexpr Color RGB() const { return Color(mColor & 0x00FFFFFF); }
+        constexpr Color RG() const { return Color(mColor & 0x0000FFFF); }
+        
+        template<typename T = uint32_t>
+        constexpr uint32_t Get() const { return static_cast<T>(mColor); }
+        
+    private:
+        uint32_t mColor{ 0 };
+    };
+}
+
 namespace Renderer
 {    
     enum MemoryType : uint32_t

@@ -14,17 +14,4 @@ namespace Renderer
     {
         bool signaled{ false };
     };
-    
-    struct AttachmentDesc
-    {
-        AttachmentType type;
-        Format format;
-        ImageLayout layout;
-    };
-    
-    // TODO: Move elesewhere
-    struct RenderPassDescriptor
-    {
-        std::vector<AttachmentDesc> attachments;
-    };
 }

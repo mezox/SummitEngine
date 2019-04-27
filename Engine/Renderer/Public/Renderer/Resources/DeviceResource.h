@@ -10,7 +10,7 @@ namespace Renderer
      */
     class RENDERER_API DeviceResource
     {
-    public:
+    public:        
         /*!
          @brief Constructs DeviceResource object.
          @param deviceObject Device object handler.
@@ -33,9 +33,14 @@ namespace Renderer
          */
         [[nodiscard]] const DeviceObject& GetDeviceObject() const { return mDeviceResource; }
         
+        /*!
+         @brief Sets device object handler
+         */
+        void SetDeviceObject(DeviceObject&& deviceObject) { mDeviceResource = std::move(deviceObject); }
         
         [[nodiscard]] DeviceObject& GetDeviceObject() { return mDeviceResource; }
         
+        //TODO: make private
     protected:
         /*!
          @brief Device object handler.

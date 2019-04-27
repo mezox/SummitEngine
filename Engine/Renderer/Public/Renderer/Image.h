@@ -23,7 +23,7 @@ namespace Renderer
         Undefined,
         Sampled,
         ColorAttachment,
-        DepthStencilAttachment
+        DepthStencilAttachment,
     };
     
     enum class ImageLayout
@@ -32,6 +32,7 @@ namespace Renderer
         Present,
         ColorAttachment,
         DepthAttachment,
+        ShaderReadOnly,
     };
     
     class RENDERER_API ImageDesc
@@ -43,6 +44,7 @@ namespace Renderer
         ImageDesc(uint32_t width, uint32_t height) noexcept;
         ImageDesc(uint32_t width, uint32_t height, uint32_t depth) noexcept;
         
+    public:
         uint32_t width{ 0 };
         uint32_t height{ 0 };
         uint32_t depth{ 0 };

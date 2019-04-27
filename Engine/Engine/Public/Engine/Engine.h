@@ -3,7 +3,9 @@
 #include <Engine/EngineBase.h>
 #include <Event/Signal.h>
 #include "Gui.h"
+
 #include <Renderer/View.h>
+#include <Renderer/RenderPass.h>
 
 #include <Renderer/DeviceObject.h>
 
@@ -52,12 +54,16 @@ namespace Summit
         void Initialize();
         void DeInitialize();
         
-        void RenderObject(Renderer::Object3D& object, Renderer::Pipeline& pipeline);
+        void RegisterRenderPass(const Renderer::RenderPass& renderPass);
+        
+        void RenderObject(Renderer::Object3d& object, Renderer::Pipeline& pipeline);
         void SetActiveSwapChain(Renderer::SwapChainBase* swapChain);
         
         void Run();
         
         void SetMainView(Renderer::View* view);
+        
+        Renderer::IRenderer& GetRenderer() const { return *mRenderer; }
         
     private:
         void StartFrame();
@@ -80,6 +86,8 @@ namespace Summit
         std::unique_ptr<UI::Gui> mGui;
         
         FrameData mFrameData;
+        
+        std::vector<const Renderer::RenderPass*> mRenderPasses;
     };
 
     ENGINE_API std::shared_ptr<SummitEngine> CreateEngineService();
