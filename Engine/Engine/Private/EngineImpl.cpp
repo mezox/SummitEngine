@@ -90,11 +90,15 @@ void SummitEngine::Update()
     // --------- RENDER PHASE -------------
     mRenderer->BeginCommandRecording();
     
-    EarlyUpdate({});
-    
     //mGui->FinishFrame();
     
-    Render({});
+    for(auto* renderPass : mRenderPasses)
+    {
+        renderPass->EarlyBeginEmitter();
+        mRenderer->BeginRenderPass(*renderPass);
+        renderPass->BeginEmitter();
+        mRenderer->EndRenderPass();
+    }
     
     mRenderer->EndCommandRecording(mActiveSwapChain);
     // --------- END OF RENDER PHASE -------------
@@ -124,9 +128,9 @@ void SummitEngine::SetActiveSwapChain(Renderer::SwapChainBase* swapChain)
     mActiveSwapChain = swapChain;
 }
 
-void SummitEngine::RegisterRenderPass(const Renderer::RenderPass& renderPass)
+void SummitEngine::RegisterRenderPass(Renderer::RenderPass& renderPass)
 {
-    mRenderPasses.push_back(&renderPass);
+    return mRenderPasses.push_back(&renderPass);
 }
 
 void SummitEngine::RenderObject(Object3d& object, Renderer::Pipeline& pipeline)

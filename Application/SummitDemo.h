@@ -31,8 +31,11 @@ namespace Demo
         void OnEarlyUpdate(const Summit::FrameData& data) override;
         void OnUpdate(const Summit::FrameData& data) override;
         void OnLateUpdate(const Summit::FrameData& data) override;
-        void OnRender(const Summit::FrameData& data) override;
-        void OnUIRender(const Summit::FrameData& data) override;
+        
+        // Rendering
+        void OnDepthPrePass();
+        void OnEarlyRender();
+        void OnRender();
         
     private:
         void OnMouseEvent(Core::MouseEvent& event);
@@ -56,7 +59,6 @@ namespace Demo
         Renderer::Camera mCamera;
         
         Renderer::Buffer mUniformBuffer;
-        
         Summit::SummitEngine* mEngine{ nullptr };
     };
 }

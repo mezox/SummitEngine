@@ -41,20 +41,21 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     renderer.CreateFramebuffer(mDepthPrePassFB, mDepthPrePass);
     
     mDepthPrePass.SetActiveFramebuffer(mDepthPrePassFB);
+    mDepthPrePass.BeginEmitter.connect(&Demo::SummitDemo::OnDepthPrePass, this);
     // ----- end of setup of depth pre pass
     
     mDefaultRenderPass.AddAttachment(AttachmentType::Color, Format::B8G8R8A8, ImageLayout::Present);
     mDefaultRenderPass.AddAttachment(AttachmentType::Depth, Format::D32F, ImageLayout::DepthAttachment);
     renderer.CreateRenderPass(mDefaultRenderPass);
     
+    mDefaultRenderPass.EarlyBeginEmitter.connect(&Demo::SummitDemo::OnEarlyRender, this);
+    mDefaultRenderPass.BeginEmitter.connect(&Demo::SummitDemo::OnRender, this);
+    
     mWindow = std::make_unique<Window>("SummitEngine", defaultViewWidth, defaultViewHeight);
     mWindow->CreateView(defaultViewWidth, defaultViewHeight, 0, 0);
     
     const auto viewPtr = mWindow->GetView();
     viewPtr->SetSwapChain(renderer.CreateSwapChain(viewPtr->GetDeviceObject(), mDefaultRenderPass.GetDeviceObject(), viewPtr->GetWidth(), viewPtr->GetHeight()));
-    
-//    mEngine->RegisterRenderPass(mDepthPrePass);
-//    mEngine->RegisterRenderPass(mDefaultRenderPass);
     
     PrepareCube();
 }
@@ -138,9 +139,9 @@ void SummitDemo::PushToEngine(SummitEngine& engine)
     mEarlyUpdateConnection = engine.EarlyUpdate.connect(&Demo::SummitDemo::OnEarlyUpdate, this);
     mUpdateConnection = engine.Updatee.connect(&Demo::SummitDemo::OnUpdate, this);
     mLateUpdateConnection = engine.LateUpdate.connect(&Demo::SummitDemo::OnLateUpdate, this);
-    mRenderConnection = engine.Render.connect(&Demo::SummitDemo::OnRender, this);
-    mUIRenderConnection = engine.UIRender.connect(&Demo::SummitDemo::OnUIRender, this);
     
+    engine.RegisterRenderPass(mDepthPrePass);
+    engine.RegisterRenderPass(mDefaultRenderPass);
     engine.SetMainView(mWindow->GetView());
     
     mWindow->GetView()->MouseEvent.connect(&SummitDemo::OnMouseEvent, this);
@@ -151,8 +152,6 @@ void SummitDemo::PopFromEngine(SummitEngine& engine)
     mEarlyUpdateConnection.disconnect();
     mUpdateConnection.disconnect();
     mLateUpdateConnection.disconnect();
-    mRenderConnection.disconnect();
-    mUIRenderConnection.disconnect();
 }
 
 void SummitDemo::OnMouseEvent(Core::MouseEvent& event)
@@ -210,19 +209,17 @@ void SummitDemo::OnLateUpdate(const FrameData& data)
     
 }
 
-void SummitDemo::OnRender(const FrameData& data)
+void SummitDemo::OnDepthPrePass()
 {
-    mDepthPrePass.SetActiveFramebuffer(mDepthPrePassFB);
-    mEngine->GetRenderer().BeginRenderPass(mDepthPrePass);
     mEngine->RenderObject(*mObject, depthPrePassPipeline);
-    mEngine->GetRenderer().EndRenderPass();
-    
-    mDefaultRenderPass.SetActiveFramebuffer(mWindow->GetView()->GetSwapChain()->GetActiveFramebuffer());
-    mEngine->GetRenderer().BeginRenderPass(mDefaultRenderPass);
-    mEngine->RenderObject(*mObject, pipeline);
-    mEngine->GetRenderer().EndRenderPass();
 }
 
-void SummitDemo::OnUIRender(const FrameData& data)
+void SummitDemo::OnEarlyRender()
 {
+    mDefaultRenderPass.SetActiveFramebuffer(mWindow->GetView()->GetSwapChain()->GetActiveFramebuffer());
+}
+
+void SummitDemo::OnRender()
+{
+    mEngine->RenderObject(*mObject, pipeline);
 }

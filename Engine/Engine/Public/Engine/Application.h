@@ -46,17 +46,6 @@ namespace Summit
          */
         virtual void OnLateUpdate(const FrameData& data) = 0;
         
-        /*!
-         @brief Frame render handler function.
-         @param data Per frame data.
-         */
-        virtual void OnRender(const FrameData& data) = 0;
-        
-        /*!
-         @brief Application UI render handler function.
-         @param data Per frame data.
-         */
-        virtual void OnUIRender(const FrameData& data) = 0;
         
     protected:
         /*!
@@ -73,15 +62,5 @@ namespace Summit
          @brief Late update connection object.
          */
         sigslot::connection mLateUpdateConnection;
-        
-        /*!
-         @brief Render connection object.
-         */
-        sigslot::connection mRenderConnection;
-        
-        /*!
-         @brief UI render connection object.
-         */
-        sigslot::connection mUIRenderConnection;
     };
 }

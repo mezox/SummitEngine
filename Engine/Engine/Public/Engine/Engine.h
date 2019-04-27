@@ -54,7 +54,7 @@ namespace Summit
         void Initialize();
         void DeInitialize();
         
-        void RegisterRenderPass(const Renderer::RenderPass& renderPass);
+        void RegisterRenderPass(Renderer::RenderPass& renderPass);
         
         void RenderObject(Renderer::Object3d& object, Renderer::Pipeline& pipeline);
         void SetActiveSwapChain(Renderer::SwapChainBase* swapChain);
@@ -65,17 +65,15 @@ namespace Summit
         
         Renderer::IRenderer& GetRenderer() const { return *mRenderer; }
         
-    private:
-        void StartFrame();
-        void Update();
-        void EndFrame();
-        
     public:
         sigslot::signal<const FrameData&> EarlyUpdate;
         sigslot::signal<const FrameData&> Updatee;
         sigslot::signal<const FrameData&> LateUpdate;
-        sigslot::signal<const FrameData&> Render;
-        sigslot::signal<const FrameData&> UIRender;
+        
+    private:
+        void StartFrame();
+        void Update();
+        void EndFrame();
         
     private:
         uint32_t mFrameId{ 0 };
@@ -87,7 +85,7 @@ namespace Summit
         
         FrameData mFrameData;
         
-        std::vector<const Renderer::RenderPass*> mRenderPasses;
+        std::vector<Renderer::RenderPass*> mRenderPasses;
     };
 
     ENGINE_API std::shared_ptr<SummitEngine> CreateEngineService();

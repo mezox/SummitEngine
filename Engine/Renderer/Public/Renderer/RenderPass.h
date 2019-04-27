@@ -6,6 +6,8 @@
 #include "Resources/Framebuffer.h"
 #include "Image.h"
 
+#include <Event/Signal.h>
+
 namespace Renderer
 {
     class RENDERER_API RenderPass : public DeviceResource
@@ -21,7 +23,6 @@ namespace Renderer
         
     public:
         RenderPass() = default;
-        
         virtual ~RenderPass() = default;
         
         RenderPass(const RenderPass& other) = delete;
@@ -33,6 +34,10 @@ namespace Renderer
         void SetActiveFramebuffer(const Renderer::Framebuffer& framebuffer) noexcept;
         
         const Renderer::Framebuffer* GetActiveFramebuffer() const noexcept;
+        
+    public:
+        sigslot::signal<> EarlyBeginEmitter;
+        sigslot::signal<> BeginEmitter;
         
     private:
         std::vector<AttachmentDesc> mAttachmentDescs;
