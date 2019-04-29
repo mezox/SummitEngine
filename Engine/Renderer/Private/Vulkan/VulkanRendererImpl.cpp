@@ -6,6 +6,8 @@
 #include <Renderer/View.h>
 #include <Renderer/Object3D.h>
 #include <Renderer/Resources/Synchronization.h>
+#include <Renderer/Resources/Texture.h>
+
 #include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
 #include <PAL/RenderAPI/Vulkan/VulkanDevice.h>
 #include <PAL/FileSystem/File.h>
@@ -98,8 +100,6 @@ void VulkanRenderer::Initialize()
     
     mCommandBufferFactory = std::make_shared<CommandBufferFactory>(mDevice, mCommandPool, mGraphicsQueue);
     
-    mImgFormat = VK_FORMAT_B8G8R8A8_UNORM;
-    
     // Setup descriptor pool  // Pre-allocate this for whole renderer/ per render thread?
     
     VkDescriptorPoolSize samplersPool{};
@@ -133,14 +133,6 @@ DeviceObject VulkanRenderer::CreateSurface(void* nativeViewHandle) const
 {
     VkSurfaceKHR vulkanSurface = VulkanAPI::Service().CreateWindowSurface(nativeViewHandle);
     return Basify(SurfaceDeviceObject{ vulkanSurface });
-}
-
-void VulkanRenderer::CreateSampler(const SamplerDesc& desc, DeviceObject& sampler)
-{
-    CreateSamplerImpl(desc);
-    
-    //TODO: Create device object
-    //TODO: Create image view
 }
 
 FramebufferDeviceObject VulkanRenderer::CreateFramebufferImpl(const uint32_t width,
@@ -341,8 +333,15 @@ std::unique_ptr<SwapChainBase> VulkanRenderer::CreateSwapChain(const DeviceObjec
     auto swapChain = std::make_unique<VulkanSwapChain>(mDevice, Basify(gpuSwapChain));
     
     VulkanAttachmentDeviceObject depthAttachmentDO = CreateAttachment(width, height, Format::D32F, ImageUsage::DepthStencilAttachment);
-    auto depthAttachment = std::make_shared<Attachment>(Format::D32F, AttachmentType::Depth, Basify(std::move(depthAttachmentDO)));
-    depthAttachment->SetClearValue(Graphics::Color(255, 0, 0, 0));
+    
+    AttachableDescriptor depthAttachmentDesc;
+    depthAttachmentDesc.width = width;
+    depthAttachmentDesc.height = height;
+    depthAttachmentDesc.format = Format::D32F;
+    depthAttachmentDesc.usage = ImageUsage::DepthStencilAttachment;
+    
+    auto depthAttachment = std::make_shared<Attachment>(depthAttachmentDesc, Graphics::Color(255, 0, 0, 0));
+    depthAttachment->SetDeviceObject(Basify(std::move(depthAttachmentDO)));
     swapChain->SetDepthAttachment(depthAttachment);
     
     // Create framebuffers & attach them to swap chain
@@ -356,12 +355,15 @@ std::unique_ptr<SwapChainBase> VulkanRenderer::CreateSwapChain(const DeviceObjec
         auto swapImageView = CreateImageView(swapImage, format.format, VK_IMAGE_ASPECT_COLOR_BIT);
         VulkanAttachmentDeviceObject attachmentDO{ swapImage, VK_NULL_HANDLE, swapImageView };
         
-        Attachment attachment(Format::B8G8R8A8, AttachmentType::Color, Basify(attachmentDO));
-        attachment.SetClearValue(Graphics::Color(20, 128, 224, 255));
+        AttachableDescriptor attachmentDesc;
+        attachmentDesc.width = width;
+        attachmentDesc.height = height;
+        attachmentDesc.format = Format::D32F;
+        attachmentDesc.usage = ImageUsage::ColorAttachment;
         
         Framebuffer framebuffer;
         framebuffer.Resize(width, height);
-        framebuffer.AddAttachment(std::make_shared<Attachment>(std::move(attachment)));
+        framebuffer.AddAttachment(std::make_shared<Attachment>(attachmentDesc, Graphics::Color(20, 128, 224, 255), Basify(attachmentDO)));
         framebuffer.AddAttachment(depthAttachment);
         framebuffer.SetDeviceObject(Basify(CreateFramebufferImpl(width, height, { swapImageView, depthAttachmentDO.view }, rpv.renderPass)));
         
@@ -489,64 +491,6 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline, const DeviceObject& rend
     std::vector<VkDescriptorSet> descriptorSets;
     descriptorSets.resize(SWAP_CHAIN_IMAGE_COUNT);           // Depends on swap chain images cnt
     mDevice->AllocateDescriptorSets(&allocInfo, descriptorSets.data());
-    
-    for (size_t i = 0; i < SWAP_CHAIN_IMAGE_COUNT; ++i)          // Depends on swap chain images cnt
-    {
-        std::vector<VkWriteDescriptorSet> descriptorWrites(effect.mUniformBuffers.size() + effect.mTextures.size());
-        
-        uint32_t descriptorWriteIdx{ 0 };
-        
-        // TODO: Descriptor writes for ubos, they should bind to unique ubos per frame, do not share them
-        for(const auto ubo : effect.mUniformBuffers)
-        {
-            const Buffer& uboBuffer = *ubo;
-            
-            BufferObjectVisitor bufferVisitor;
-            uboBuffer.deviceObject.Accept(bufferVisitor);
-            
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = bufferVisitor.buffer;
-            bufferInfo.offset = uboBuffer.offset;
-            bufferInfo.range = uboBuffer.dataSize;
-            
-            descriptorWrites[descriptorWriteIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[descriptorWriteIdx].dstSet = descriptorSets[i];
-            descriptorWrites[descriptorWriteIdx].dstBinding = 0;
-            descriptorWrites[descriptorWriteIdx].dstArrayElement = 0;
-            descriptorWrites[descriptorWriteIdx].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[descriptorWriteIdx].descriptorCount = 1;
-            descriptorWrites[descriptorWriteIdx].pBufferInfo = &bufferInfo;
-            
-            ++descriptorWriteIdx;
-        }
-        
-        // TODO: Descriptor writes for textures, they should bind to unique ubos per frame, do not share them
-        for(const auto texture : effect.mTextures)
-        {
-            const Image& image = *texture;
-            
-            const auto& texDeviceObject = image.GetDeviceObject();
-            TextureVisitor textureVisitor;
-            texDeviceObject.Accept(textureVisitor);
-            
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = textureVisitor.imageView;
-            imageInfo.sampler = textureVisitor.sampler;
-            
-            descriptorWrites[descriptorWriteIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[descriptorWriteIdx].dstSet = descriptorSets[i];
-            descriptorWrites[descriptorWriteIdx].dstBinding = 1;
-            descriptorWrites[descriptorWriteIdx].dstArrayElement = 0;
-            descriptorWrites[descriptorWriteIdx].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[descriptorWriteIdx].descriptorCount = 1;
-            descriptorWrites[descriptorWriteIdx].pImageInfo = &imageInfo;
-            
-            ++descriptorWriteIdx;
-        }
-        
-        mDevice->UpdateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
     
     DescriptorSetLayoutDeviceObject dslDeviceObject(descriptorSetLayout);
     effect.mDescriptorSetLayouts.push_back(Basify(std::move(dslDeviceObject)));
@@ -698,6 +642,80 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline, const DeviceObject& rend
     pipeline.mDeviceObject = PipelineDeviceObject(pipelineHandle, layout);
     
     mResourceManager.push_back(&pipeline.mDeviceObject);
+    
+    for (size_t i = 0; i < SWAP_CHAIN_IMAGE_COUNT; ++i)          // Depends on swap chain images cnt
+    {
+        std::vector<VkWriteDescriptorSet> descriptorWrites(effect.mUniformBuffers.size() + effect.mTextures.size());
+        
+        uint32_t descriptorWriteIdx{ 0 };
+        
+        // TODO: Descriptor writes for ubos, they should bind to unique ubos per frame, do not share them
+        for(const auto ubo : effect.mUniformBuffers)
+        {
+            const Buffer& uboBuffer = *ubo;
+            
+            BufferObjectVisitor bufferVisitor;
+            uboBuffer.deviceObject.Accept(bufferVisitor);
+            
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = bufferVisitor.buffer;
+            bufferInfo.offset = uboBuffer.offset;
+            bufferInfo.range = uboBuffer.dataSize;
+            
+            descriptorWrites[descriptorWriteIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[descriptorWriteIdx].dstSet = descriptorSets[i];
+            descriptorWrites[descriptorWriteIdx].dstBinding = 0;
+            descriptorWrites[descriptorWriteIdx].dstArrayElement = 0;
+            descriptorWrites[descriptorWriteIdx].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[descriptorWriteIdx].descriptorCount = 1;
+            descriptorWrites[descriptorWriteIdx].pBufferInfo = &bufferInfo;
+            
+            ++descriptorWriteIdx;
+        }
+        
+        // TODO: Descriptor writes for textures, they should bind to unique ubos per frame, do not share them
+        for(const auto texture : effect.mTextures)
+        {
+            const Attachable& image = *texture;
+            
+            const auto& texDeviceObject = image.GetDeviceObject();
+            
+            AttachableVisitor attachable;
+            texDeviceObject.Accept(attachable);
+            
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = attachable.imageView;
+            imageInfo.sampler = [this, &attachable](){
+                if(attachable.sampler == VK_NULL_HANDLE)
+                {
+                    SamplerDesc samplerDesc;
+                    samplerDesc.anisotropy = 0;
+                    samplerDesc.minFilter = FilterMode::Linear;
+                    samplerDesc.magFilter = FilterMode::Linear;
+                    samplerDesc.uAddressMode = AddressMode::Repeat;
+                    samplerDesc.vAddressMode = AddressMode::Repeat;
+                    samplerDesc.wAddressMode = AddressMode::Repeat;
+                    
+                    return CreateSamplerImpl(samplerDesc);
+                }
+                
+                return attachable.sampler;
+            }();
+            
+            descriptorWrites[descriptorWriteIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[descriptorWriteIdx].dstSet = descriptorSets[i];
+            descriptorWrites[descriptorWriteIdx].dstBinding = 1;
+            descriptorWrites[descriptorWriteIdx].dstArrayElement = 0;
+            descriptorWrites[descriptorWriteIdx].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[descriptorWriteIdx].descriptorCount = 1;
+            descriptorWrites[descriptorWriteIdx].pImageInfo = &imageInfo;
+            
+            ++descriptorWriteIdx;
+        }
+        
+        mDevice->UpdateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
 }
 
 uint32_t VulkanRenderer::FindMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
@@ -850,19 +868,19 @@ void VulkanRenderer::CreateFramebuffer(Framebuffer& framebuffer, const RenderPas
     
     for(auto attachment : framebuffer.mAttachments)
     {
-        const bool isDepthAttachment = attachment->GetType() == AttachmentType::Depth;
+        const bool isDepthAttachment(attachment->GetUsage() & ImageUsage::DepthStencilAttachment);
         
         VulkanImageDesc vulkanImageDescriptor;
-        vulkanImageDescriptor.width = framebuffer.GetWidth();
-        vulkanImageDescriptor.height = framebuffer.GetHeight();
+        vulkanImageDescriptor.width = attachment->GetWidth();
+        vulkanImageDescriptor.height = attachment->GetHeight();
         vulkanImageDescriptor.depth = 1;
         vulkanImageDescriptor.mipMapLevels = 1;
         vulkanImageDescriptor.data = nullptr;
         vulkanImageDescriptor.format = ConvertType(attachment->GetFormat());
         vulkanImageDescriptor.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         vulkanImageDescriptor.tiling = VK_IMAGE_TILING_OPTIMAL;
-        vulkanImageDescriptor.memoryProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        vulkanImageDescriptor.usage = isDepthAttachment ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        vulkanImageDescriptor.memoryProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; //ConvertType(attachment->GetUsage());
+        vulkanImageDescriptor.usage = isDepthAttachment ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         
         const ImageDeviceObject imageDeviceObject = CreateImageImpl(vulkanImageDescriptor);
         
@@ -1041,7 +1059,7 @@ void VulkanRenderer::RenderGui(const VertexBufferBase& vb, const Pipeline& pipel
     
     mCmdList.push_back(BindDescriptorSets(pipeline.mDeviceObject, pipeline.effect.mDescriptorSets[0]));
     mCmdList.push_back(BindPipeline(pipeline.mDeviceObject));
-    mCmdList.push_back(SetViewport(imViewSize.x, imViewSize.y));
+    mCmdList.push_back(SetViewportCommand(Rectangle<float>(imViewSize.x, imViewSize.y)));
     mCmdList.push_back(PushConstants(pipeline.mDeviceObject, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantsBlock), &pcb));
     mCmdList.push_back(BindVertexBuffer(vb));
     mCmdList.push_back(BindIndexBuffer(vb));
@@ -1054,13 +1072,13 @@ void VulkanRenderer::RenderGui(const VertexBufferBase& vb, const Pipeline& pipel
         {
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[j];
             
-            VkRect2D scissorRect;
+            Rectangle<uint32_t> scissorRect;
             scissorRect.offset.x = std::max((int32_t)(pcmd->ClipRect.x), 0);
             scissorRect.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
-            scissorRect.extent.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
-            scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
+            scissorRect.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
+            scissorRect.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
             
-            mCmdList.push_back(SetScissor(std::move(scissorRect)));
+            mCmdList.push_back(SetScissorCommand(scissorRect));
             mCmdList.push_back(DrawIndexed(pcmd->ElemCount, indexOffset, vertexOffset));
             
             indexOffset += pcmd->ElemCount;
@@ -1301,19 +1319,18 @@ CmdRecordResult VulkanRenderer::BeginRenderPass(const RenderPass& renderPass)
     
     mCmdList.push_back(Vulkan::BeginRenderPass(renderPass));
     
-    const uint32_t width = activeFramebufferPtr->GetWidth();
-    const uint32_t height = activeFramebufferPtr->GetHeight();
-    
-    mCmdList.push_back(SetViewport(width, height));
-    
-    VkRect2D scissorRect;
-    scissorRect.offset.x = 0;
-    scissorRect.offset.y = 0;
-    scissorRect.extent.width = width;
-    scissorRect.extent.height = height;
-    
-    mCmdList.push_back(SetScissor(std::move(scissorRect)));
-    
+    return CmdRecordResult::Success;
+}
+
+CmdRecordResult VulkanRenderer::SetViewport(const Rectangle<float>& viewport)
+{
+    mCmdList.push_back(SetViewportCommand(viewport));
+    return CmdRecordResult::Success;
+}
+
+CmdRecordResult VulkanRenderer::SetScissor(const Rectangle<uint32_t>& scissor)
+{
+    mCmdList.push_back(SetScissorCommand(scissor));
     return CmdRecordResult::Success;
 }
 

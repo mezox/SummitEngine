@@ -4,6 +4,7 @@
 #include <Renderer/Image.h>
 #include <Renderer/Effect.h>
 #include <Renderer/SharedDeviceTypes.h>
+#include <Renderer/Resources/Texture.h>
 
 template<>
 auto TypeLinkerTempl<Renderer::BufferUsage, VkBufferUsageFlagBits>::operator()(const from_t& bufferUsage) -> to_t
@@ -29,15 +30,23 @@ auto TypeLinkerTempl<Renderer::ImageType, VkImageType>::operator()(const from_t&
 }
 
 template<>
-auto TypeLinkerTempl<Renderer::ImageUsage, VkImageUsageFlagBits>::operator()(const from_t& imageUsage) -> to_t
+auto TypeLinkerTempl<Renderer::ImageUsage, VkImageUsageFlags>::operator()(const from_t& imageUsage) -> to_t
 {
-    switch(imageUsage)
-    {
-        case Renderer::ImageUsage::Undefined: throw std::runtime_error("Undefined image usage");
-        case Renderer::ImageUsage::ColorAttachment: return to_t{ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT };
-        case Renderer::ImageUsage::DepthStencilAttachment: return to_t{ VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT };
-        case Renderer::ImageUsage::Sampled: return to_t{ VK_IMAGE_USAGE_SAMPLED_BIT };
-    }
+    VkImageUsageFlags usageFlags{ 0 };
+    
+    if(imageUsage == Renderer::ImageUsage::Undefined)
+        throw std::runtime_error("Undefined image usage");
+    
+    if(imageUsage == Renderer::ImageUsage::Sampled)
+        usageFlags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+        
+    if(imageUsage == Renderer::ImageUsage::ColorAttachment)
+        usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        
+    if(imageUsage == Renderer::ImageUsage::DepthStencilAttachment)
+        usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    
+    return usageFlags;
 }
 
 template<>
@@ -132,5 +141,31 @@ auto TypeLinkerTempl<Renderer::UniformType, VkDescriptorType>::operator()(const 
         case Renderer::UniformType::Buffer: return to_t{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER };
         case Renderer::UniformType::Sampler: return to_t{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER };
     }
+}
+
+// Viewport
+template<>
+auto TypeLinkerTempl<Renderer::Rectangle<float>, VkViewport>::operator()(const from_t& type) -> to_t
+{
+    to_t viewport;
+    viewport.width = type.width;
+    viewport.height = type.height;
+    viewport.x = type.offset.x;
+    viewport.y = type.offset.y;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    return viewport;
+}
+
+// Scissor
+template<>
+auto TypeLinkerTempl<Renderer::Rectangle<uint32_t>, VkRect2D>::operator()(const from_t& type) -> to_t
+{
+    to_t rect;
+    rect.extent.width = type.width;
+    rect.extent.height = type.height;
+    rect.offset.x = type.offset.x;
+    rect.offset.y = type.offset.y;
+    return rect;
 }
 

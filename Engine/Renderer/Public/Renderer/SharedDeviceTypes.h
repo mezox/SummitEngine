@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Math/Vector2.h>
+#include <Core/Templates.h>
+
 #include <type_traits>
 #include <cstdint>
 #include <stdexcept>
@@ -39,10 +42,44 @@ namespace Graphics
     private:
         uint32_t mColor{ 0 };
     };
+    
+    static constexpr Color ColorBlack = Color(0, 0, 0, 0);
+    static constexpr Color ClearValueDepthStencil = Color(255, 0, 0, 0);
 }
 
 namespace Renderer
-{    
+{
+    template<typename T>
+    struct Rectangle
+    {
+        constexpr Rectangle() = default;
+        constexpr Rectangle(const T w, const T h) : width(w), height(h) {}
+        constexpr Rectangle(const Vector2<T>& vec) : width(vec.x), height(vec.y) {}
+        constexpr Rectangle(const T w, const T h, const T x, const T y) : width(w), height(h), offset(x, y) {}
+        constexpr Rectangle(const Vector2<T>& size, const Vector2<T>& offset) : width(size.x), height(size.y), offset(offset) {}
+        
+        T width{ 0 };
+        T height{ 0 };
+        Vector2<T> offset{ 0, 0 };
+    };
+    
+    enum class ImageUsage : uint32_t
+    {
+        Undefined = 0x00000000,
+        Sampled = 0x00000001,
+        ColorAttachment = 0x00000010,
+        DepthStencilAttachment = 0x00000100
+    };
+    
+    enum class ImageLayout
+    {
+        Undefined,
+        Present,
+        ColorAttachment,
+        DepthAttachment,
+        ShaderReadOnly,
+    };
+    
     enum MemoryType : uint32_t
     {
         Undefined = 0x00000000,
@@ -79,10 +116,14 @@ namespace Renderer
             case Format::R32G32B32F: return 12;
             case Format::R32G32B32A32F: return 16;
                 
+            case Format::B8G8R8A8: return 4;
+                
             case Format::D32F: return 4;
             case Format::D32FS8F: return 5;
             case Format::D24S8: return 4;
         }
+        
+        return 0;
     }
     
     namespace Detail
@@ -100,3 +141,6 @@ namespace Renderer
         }
     }
 }
+
+template<>
+struct Bitmask<Renderer::ImageUsage> : std::true_type{};

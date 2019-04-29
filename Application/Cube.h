@@ -2,6 +2,44 @@
 
 #include <Renderer/Object3D.h>
 
+class Quad : public Renderer::Object3d
+{
+public:
+    Quad()
+    {
+        auto vb = std::make_unique<Renderer::VertexBufferPCI<Vector2f, Vector2f, uint16_t>>();
+        
+        auto& positionStream = vb->GetPositionDataStream();
+        auto& colorStream = vb->GetColorDataStream();
+        auto& indexStream = vb->GetIndexDataStream();
+        
+        auto& positionData = positionStream.GetData();
+        auto& colorData = colorStream.GetData();
+        auto& indexData = indexStream.GetData();
+        
+        // Quad 1
+        positionData.push_back({ -1.0f, -1.0f });
+        positionData.push_back({ 1.0f, -1.0f });
+        positionData.push_back({ 1.0f, 1.0f });
+        positionData.push_back({ -1.0f, 1.0f });
+        
+        colorData.push_back({ 0.0f, 0.0f });
+        colorData.push_back({ 1.0f, 0.0f });
+        colorData.push_back({ 1.0f, 1.0f });
+        colorData.push_back({ 0.0f, 1.0f });
+        
+        indexData = {
+            0, 1, 2, 2, 3, 0, // bottom
+        };
+        
+        positionStream.Lock(Renderer::CommitCommand::Commit);
+        colorStream.Lock(Renderer::CommitCommand::Commit);
+        indexStream.Lock(Renderer::CommitCommand::Commit);
+        
+        mVertexBuffer = std::move(vb);
+    }
+};
+
 class Cube : public Renderer::Object3d
 {
 public:

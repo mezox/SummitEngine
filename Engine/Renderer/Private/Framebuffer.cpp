@@ -2,31 +2,70 @@
 
 using namespace Renderer;
 
-Attachment::Attachment(const Format format, const AttachmentType type)
-    : mFormat(format)
-    , mType(type)
+namespace
+{
+    bool IsAttachmentType(const ImageUsage usage)
+    {
+        if(usage & ImageUsage::ColorAttachment || usage & ImageUsage::DepthStencilAttachment)
+        {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    constexpr AttachmentType ToAttachmentType(const ImageUsage usage)
+    {
+        switch (usage)
+        {
+            case ImageUsage::ColorAttachment: return AttachmentType::Color;
+            case ImageUsage::DepthStencilAttachment: return AttachmentType::DepthStencil;
+            default:
+                return AttachmentType::Undefined;
+        }
+        
+        return AttachmentType::Undefined;
+    }
+}
+
+Attachable::Attachable(const AttachableDescriptor& desc)
+    : mDescriptor(desc)
 {}
 
-Attachment::Attachment(const Format format, const AttachmentType type, DeviceObject&& resource)
-    : DeviceResource(std::move(resource))
-    , mFormat(format)
-    , mType(type)
+Attachable::Attachable(const AttachableDescriptor& desc, DeviceObject&& deviceObject)
+    : DeviceResource(std::move(deviceObject))
+    , mDescriptor(desc)
 {}
 
-void Attachment::SetClearValue(const Graphics::Color value)
+uint32_t Attachable::GetWidth() const noexcept
 {
-    mClearValue = value;
+    return mDescriptor.width;
 }
 
-Format Attachment::GetFormat() const noexcept
+uint32_t Attachable::GetHeight() const noexcept
 {
-    return mFormat;
+    return mDescriptor.height;
 }
 
-AttachmentType Attachment::GetType() const noexcept
+Format Attachable::GetFormat() const noexcept
 {
-    return mType;
+    return mDescriptor.format;
 }
+
+ImageUsage Attachable::GetUsage() const noexcept
+{
+    return mDescriptor.usage;
+}
+
+Attachment::Attachment(const AttachableDescriptor& desc, const Graphics::Color clearValue)
+    : Attachable(desc)
+    , mClearValue(clearValue)
+{}
+
+Attachment::Attachment(const AttachableDescriptor& desc, const Graphics::Color clearValue, DeviceObject&& deviceObject)
+    : Attachable(desc, std::move(deviceObject))
+    , mClearValue(clearValue)
+{}
 
 Graphics::Color Attachment::GetClearValue() const noexcept
 {
@@ -44,9 +83,32 @@ void Framebuffer::AddAttachment(std::shared_ptr<Attachment> attachment) noexcept
     mAttachments.push_back(std::move(attachment));
 }
 
-void Framebuffer::AddAttachment(Format format, AttachmentType type) noexcept
+void Framebuffer::AddAttachment(const Format format, const ImageUsage usage, const Graphics::Color clearValue) noexcept
 {
-    mAttachments.push_back(std::make_shared<Attachment>(format, type));
+    AttachableDescriptor desc;
+    desc.width = mWidth;
+    desc.height = mHeight;
+    desc.format = format;
+    desc.usage = usage;
+    
+    //static_assert(desc., <#message#>)
+    
+    mAttachments.push_back(std::make_shared<Attachment>(desc, clearValue));
+}
+
+const std::vector<Attachment*> Framebuffer::GetAttachment(AttachmentType type) noexcept
+{
+    std::vector<Attachment*> attachmentPtrs;
+    for(const auto& attachment : mAttachments)
+    {
+        const auto imageUsage = attachment->GetUsage();
+        if(ToAttachmentType(imageUsage) == type)
+        {
+            attachmentPtrs.push_back(attachment.get());
+        }
+    }
+    
+    return attachmentPtrs;
 }
 
 void Framebuffer::Resize(uint32_t width, uint32_t height) noexcept
@@ -58,7 +120,7 @@ void Framebuffer::Resize(uint32_t width, uint32_t height) noexcept
 bool Framebuffer::HasAttachment(AttachmentType type) const noexcept
 {
     const auto result = std::find_if(mAttachments.begin(), mAttachments.end(), [&type](const auto& attachmentPtr){
-        return attachmentPtr->GetType() == type;
+        return ToAttachmentType(attachmentPtr->GetUsage()) == type;
     });
     
     return result != mAttachments.end();

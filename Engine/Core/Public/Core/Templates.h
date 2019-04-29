@@ -1,13 +1,23 @@
 #pragma once
 
 template<typename T>
-struct BitMaskOperatorEnable
+struct Bitmask : std::false_type{};
+
+template<typename T>
+struct BoolWrapper
 {
-    static const bool enable = false;
+    constexpr BoolWrapper(T t): t(t) { }
+    constexpr operator T() const { return t; }
+    constexpr explicit operator bool() const
+    {
+        using UT = typename std::underlying_type<T>::type;
+        return static_cast<UT>(t);
+    }
+    T t;
 };
 
 template<typename T>
-typename std::enable_if<BitMaskOperatorEnable<T>::enable, T>::type
+typename std::enable_if<Bitmask<T>::value, BoolWrapper<T>>::type
 operator |(T lhs, T rhs)
 {
     using UT = typename std::underlying_type<T>::type;
@@ -15,7 +25,7 @@ operator |(T lhs, T rhs)
 }
 
 template<typename T>
-typename std::enable_if<BitMaskOperatorEnable<T>::enable, T>::type
+typename std::enable_if<Bitmask<T>::value, BoolWrapper<T>>::type
 operator &(T lhs, T rhs)
 {
     using UT = typename std::underlying_type<T>::type;

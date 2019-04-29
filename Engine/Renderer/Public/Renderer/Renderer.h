@@ -36,6 +36,7 @@ namespace Renderer
     struct SemaphoreDescriptor;
     struct FenceDescriptor;
     struct EventDescriptor;
+    struct SamplerDesc;
     struct RenderPassDescriptor;
     
     enum class CmdRecordResult
@@ -60,7 +61,6 @@ namespace Renderer
         virtual void CreateBuffer(const BufferDesc& desc, DeviceObject& buffer) = 0;
         virtual void CreateFramebuffer(Framebuffer& desc, const RenderPass& renderPass) = 0;
         virtual DeviceObject CreateImage(const ImageDesc& desc) = 0;
-        virtual void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) = 0;
         virtual void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) = 0;
         virtual DeviceObject CreateSemaphore(const SemaphoreDescriptor& desc) const = 0;
         virtual DeviceObject CreateFence(const FenceDescriptor& desc) const = 0;
@@ -89,6 +89,10 @@ namespace Renderer
          @return Result code of command recording.
          */
         virtual CmdRecordResult BeginRenderPass(const RenderPass& renderPass) = 0;
+        
+        
+        virtual CmdRecordResult SetViewport(const Rectangle<float>& viewport) = 0;
+        virtual CmdRecordResult SetScissor(const Rectangle<uint32_t>& scissor) = 0;
         
         /*!
          @brief Ends most recently started rendering pass.
@@ -155,5 +159,7 @@ namespace Renderer
         bool depthTestEnabled{ false };
         
         DeviceObject mDeviceObject;
+        Vector2f mViewPort;
+        Vector2f mOffset;
     };
 }

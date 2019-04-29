@@ -49,6 +49,7 @@ set(PUBLIC_SOURCES
     Public/Renderer/Resources/DeviceResource.h
     Public/Renderer/Resources/Framebuffer.h
     Public/Renderer/Resources/Buffer.h
+    Public/Renderer/Resources/Texture.h
     Public/Renderer/Resources/Synchronization.h
 )
 
@@ -64,6 +65,7 @@ set(PRIVATE_SOURCES
 	Private/Vulkan/VulkanSwapChainImpl.h
 	Private/Vulkan/VulkanSwapChainImpl.cpp
 	Private/Vulkan/VulkanDeviceObjects.h
+    Private/Texture.cpp
 	Private/View.cpp
     Private/Effect.cpp
     Private/Framebuffer.cpp

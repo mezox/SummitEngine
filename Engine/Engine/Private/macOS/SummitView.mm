@@ -211,7 +211,6 @@ using namespace Core;
 
 - (void)scrollWheel:(NSEvent *)event
 {
-    NSLog(@"scroll");
 }
 
 /** Returns a Metal-compatible layer. */

@@ -12,7 +12,7 @@
 namespace Renderer
 {
     class Buffer;
-    class Image;
+    class Attachable;
     
     enum class ModuleStage
     {
@@ -73,7 +73,7 @@ namespace Renderer
         void AddConstantRange(ModuleStage stage, uint32_t offset, uint32_t size);
         
         void AddUniformBuffer(ModuleStage stage, uint32_t binding, const Buffer& buffer);
-        void AddTexture(ModuleStage stage, uint32_t binding, const Image& image);
+        void AddTexture(ModuleStage stage, uint32_t binding, const Attachable& image);
         
         uint8_t GetBindingCount() const;
         const std::vector<Format>& GetBindingDescriptor(uint8_t binding) const;
@@ -91,6 +91,6 @@ namespace Renderer
         std::vector<DeviceObject> mDescriptorSets;
         
         std::vector<const Buffer*> mUniformBuffers;
-        std::vector<const Image*> mTextures;
+        std::vector<const Attachable*> mTextures;
     };
 }

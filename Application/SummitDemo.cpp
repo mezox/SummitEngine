@@ -3,7 +3,7 @@
 #include <Engine/Engine.h>
 #include <Engine/Window.h>
 #include <Renderer/View.h>
-#include <Renderer/Image.h>
+#include <Renderer/Resources/Texture.h>
 #include <Renderer/Effect.h>
 #include <Math/Math.h>
 #include <Core/TupleHash.h>
@@ -29,15 +29,24 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     
     auto& renderer = mEngine->GetRenderer();
     
+    mUniformBuffer.offset = 0;
+    mUniformBuffer.dataSize = 3 * sizeof(Matrix4);
+    
+    BufferDesc mvpUboDesc;
+    mvpUboDesc.bufferSize = mUniformBuffer.dataSize;
+    mvpUboDesc.usage = BufferUsage::UniformBuffer;
+    mvpUboDesc.memoryUsage = MemoryType(MemoryType::HostVisible | MemoryType::HostCoherent);
+    renderer.CreateBuffer(mvpUboDesc, mUniformBuffer.deviceObject);
+    
+    mTexture = std::make_unique<Texture>(Texture::CreateFromFile("/Users/tomaskubovcik/Dev/SummitEngine/texture.jpg"));
+    
     // ----- setup depth pre pass
-    mDepthPrePass.AddAttachment(AttachmentType::Depth, Format::D32F, ImageLayout::DepthAttachment);
+    mDepthPrePass.AddAttachment(AttachmentType::DepthStencil, Format::D32F, ImageLayout::DepthAttachment);
     renderer.CreateRenderPass(mDepthPrePass);
 
     mDepthPrePassFB.Resize(defaultViewWidth, defaultViewHeight);
     
-    Attachment depthAttachment(Format::D32F, AttachmentType::Depth);
-    depthAttachment.SetClearValue(Graphics::Color(255, 0, 0, 0));
-    mDepthPrePassFB.AddAttachment(std::make_shared<Attachment>(std::move(depthAttachment)));
+    mDepthPrePassFB.AddAttachment(Format::D32F, ImageUsage::DepthStencilAttachment, Graphics::ClearValueDepthStencil);
     renderer.CreateFramebuffer(mDepthPrePassFB, mDepthPrePass);
     
     mDepthPrePass.SetActiveFramebuffer(mDepthPrePassFB);
@@ -45,7 +54,7 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     // ----- end of setup of depth pre pass
     
     mDefaultRenderPass.AddAttachment(AttachmentType::Color, Format::B8G8R8A8, ImageLayout::Present);
-    mDefaultRenderPass.AddAttachment(AttachmentType::Depth, Format::D32F, ImageLayout::DepthAttachment);
+    mDefaultRenderPass.AddAttachment(AttachmentType::DepthStencil, Format::D32F, ImageLayout::DepthAttachment);
     renderer.CreateRenderPass(mDefaultRenderPass);
     
     mDefaultRenderPass.EarlyBeginEmitter.connect(&Demo::SummitDemo::OnEarlyRender, this);
@@ -57,6 +66,27 @@ SummitDemo::SummitDemo(SummitEngine& engine)
     const auto viewPtr = mWindow->GetView();
     viewPtr->SetSwapChain(renderer.CreateSwapChain(viewPtr->GetDeviceObject(), mDefaultRenderPass.GetDeviceObject(), viewPtr->GetWidth(), viewPtr->GetHeight()));
     
+    mQuad = std::make_unique<Quad>();
+    
+    // Setup stages
+    mQuadPipeline.effect.AddModule(ModuleStage::Vertex, "/Users/tomaskubovcik/Dev/SummitEngine/quad_vert.spv");
+    mQuadPipeline.effect.AddModule(ModuleStage::Fragment, "/Users/tomaskubovcik/Dev/SummitEngine/quad_frag.spv");
+
+    // Setup attributes
+    mQuadPipeline.effect.AddAttribute(Format::R32G32F, 0);
+    mQuadPipeline.effect.AddAttribute(Format::R32G32F, 1);
+
+    const auto depthAttachments = mDepthPrePassFB.GetAttachment(AttachmentType::DepthStencil);
+    if(!depthAttachments.empty())
+    {
+        mQuadPipeline.effect.AddUniformBuffer(ModuleStage::Vertex, 0, mUniformBuffer);
+        mQuadPipeline.effect.AddTexture(ModuleStage::Fragment, 1, *depthAttachments.back());
+        
+        renderer.CreatePipeline(mQuadPipeline, mDefaultRenderPass.GetDeviceObject());
+        mQuadPipeline.mViewPort = Vector2f(200.0f, 40.0f);
+        mQuadPipeline.mOffset = Vector2f(400.0f, 400.0f);
+    }
+    
     PrepareCube();
 }
 
@@ -65,17 +95,6 @@ void SummitDemo::PrepareCube()
     mObject = std::make_unique<Cube>();
     
     auto& renderer = Renderer::RendererLocator::GetRenderer();
-    
-    mUniformBuffer.offset = 0;
-    mUniformBuffer.dataSize = 3 * sizeof(Matrix4);
-    
-    BufferDesc mvpUboDesc;
-    mvpUboDesc.bufferSize = mUniformBuffer.dataSize;
-    mvpUboDesc.usage = BufferUsage::UniformBuffer;
-    mvpUboDesc.memoryUsage = MemoryType(MemoryType::HostVisible | MemoryType::HostCoherent);
-    renderer.CreateBuffer(mvpUboDesc, mUniformBuffer.deviceObject);
-    
-    mTexture = std::make_unique<Image>(Image::CreateFromFile("/Users/tomaskubovcik/Dev/SummitEngine/texture.jpg"));
     
     // Setup stages
     pipeline.effect.AddModule(ModuleStage::Vertex, "/Users/tomaskubovcik/Dev/SummitEngine/vert.spv");
@@ -106,16 +125,7 @@ void SummitDemo::PrepareChalet()
     
     auto& renderer = Renderer::RendererLocator::GetRenderer();
     
-    mUniformBuffer.offset = 0;
-    mUniformBuffer.dataSize = 3 * sizeof(Matrix4);
-    
-    BufferDesc mvpUboDesc;
-    mvpUboDesc.bufferSize = mUniformBuffer.dataSize;
-    mvpUboDesc.usage = BufferUsage::UniformBuffer;
-    mvpUboDesc.memoryUsage = MemoryType(MemoryType::HostVisible | MemoryType::HostCoherent);
-    renderer.CreateBuffer(mvpUboDesc, mUniformBuffer.deviceObject);
-    
-    mTexture = std::make_unique<Image>(Image::CreateFromFile("/Users/tomaskubovcik/Dev/SummitEngine/chalet.jpg"));
+    mTexture = std::make_unique<Texture>(Texture::CreateFromFile("/Users/tomaskubovcik/Dev/SummitEngine/chalet.jpg"));
     
     // Setup stages
     pipeline.effect.AddModule(ModuleStage::Vertex, "/Users/tomaskubovcik/Dev/SummitEngine/vert.spv");
@@ -132,6 +142,29 @@ void SummitDemo::PrepareChalet()
     
     pipeline.depthTestEnabled = true;
     renderer.CreatePipeline(pipeline, mDefaultRenderPass.GetDeviceObject());
+}
+
+void SummitDemo::PrepareSponza()
+{
+//    auto& renderer = Renderer::RendererLocator::GetRenderer();
+//    
+//    // Setup render pass
+//    mSponzaRenderPass.AddAttachment(AttachmentType::Color, Format::R32G32B32F, ImageLayout::ShaderReadOnly);
+//    mSponzaRenderPass.AddAttachment(AttachmentType::Color, Format::R32G32B32F, ImageLayout::ShaderReadOnly);
+//    mSponzaRenderPass.AddAttachment(AttachmentType::Color, Format::B8G8R8A8, ImageLayout::ShaderReadOnly);
+//    mSponzaRenderPass.AddAttachment(AttachmentType::DepthStencil, Format::D32F, ImageLayout::DepthAttachment);
+//    renderer.CreateRenderPass(mSponzaRenderPass);
+//    
+//    mGBuffer.Resize(1280, 720);
+//    mGBuffer.AddAttachment(Format::R32G32B32F, AttachmentType::Color, Graphics::ColorBlack);
+//    mGBuffer.AddAttachment(Format::R32G32B32F, AttachmentType::Color, Graphics::ColorBlack);
+//    mGBuffer.AddAttachment(Format::B8G8R8A8, AttachmentType::Color, Graphics::ColorBlack);
+//    mGBuffer.AddAttachment(Format::D32F, AttachmentType::DepthStencil, Graphics::ClearValueDepthStencil);
+//    
+//    renderer.CreateFramebuffer(mGBuffer, mSponzaRenderPass);
+//    
+//    mSponzaRenderPass.SetActiveFramebuffer(mGBuffer);
+//    mSponzaRenderPass.BeginEmitter.connect(&Demo::SummitDemo::OnRender, this);
 }
 
 void SummitDemo::PushToEngine(SummitEngine& engine)
@@ -211,6 +244,11 @@ void SummitDemo::OnLateUpdate(const FrameData& data)
 
 void SummitDemo::OnDepthPrePass()
 {
+    const auto width = mDepthPrePass.GetActiveFramebuffer()->GetWidth();
+    const auto height = mDepthPrePass.GetActiveFramebuffer()->GetHeight();
+    
+    mEngine->GetRenderer().SetViewport(Rectangle<float>(width, height));
+    mEngine->GetRenderer().SetScissor(Rectangle<uint32_t>(width, height));
     mEngine->RenderObject(*mObject, depthPrePassPipeline);
 }
 
@@ -221,5 +259,14 @@ void SummitDemo::OnEarlyRender()
 
 void SummitDemo::OnRender()
 {
+    const auto width = mDefaultRenderPass.GetActiveFramebuffer()->GetWidth();
+    const auto height = mDefaultRenderPass.GetActiveFramebuffer()->GetHeight();
+    
+    mEngine->GetRenderer().SetViewport(Rectangle<float>(width, height));
+    mEngine->GetRenderer().SetScissor(Rectangle<uint32_t>(width, height));
     mEngine->RenderObject(*mObject, pipeline);
+    
+    mEngine->GetRenderer().SetViewport(Rectangle<float>(280.0f, 280.0f * height/ width, 1000.0f, 0.0f));
+    mEngine->GetRenderer().SetScissor(Rectangle<uint32_t>(280.0f, 280.0f * height/ width, 1000.0f, 0.0f));
+    mEngine->RenderObject(*mQuad, mQuadPipeline);
 }

@@ -304,18 +304,12 @@ namespace Renderer::Vulkan
         VkDescriptorSet mDescriptorSet;
     };
     
-    class SetViewport final : public VulkanCommand<SetViewport>
+    class SetViewportCommand final : public VulkanCommand<SetViewportCommand>
     {
     public:
-        SetViewport(const uint32_t w, const uint32_t h)
-        {
-            mViewport.x = 0.0f;
-            mViewport.y = 0.0f;
-            mViewport.width = w;
-            mViewport.height = h;
-            mViewport.minDepth = 0.0f;
-            mViewport.maxDepth = 1.0f;
-        }
+        SetViewportCommand(const Rectangle<float>& viewport)
+            : mViewport(ConvertType(viewport))
+        {}
         
         [[nodiscard]] std::string GetDescription() const noexcept
         {
@@ -331,11 +325,11 @@ namespace Renderer::Vulkan
         VkViewport mViewport;
     };
     
-    class SetScissor final : public VulkanCommand<SetScissor>
+    class SetScissorCommand final : public VulkanCommand<SetScissorCommand>
     {
     public:
-        SetScissor(VkRect2D&& rect)
-            : mScissor(std::move(rect))
+        SetScissorCommand(const Rectangle<uint32_t>& scissor)
+            : mScissor(ConvertType(scissor))
         {}
         
         [[nodiscard]] std::string GetDescription() const noexcept

@@ -357,20 +357,22 @@ namespace Renderer
         VkDeviceMemory memory{ VK_NULL_HANDLE };
     };
     
-    class TextureVisitor : public DeviceObjectVisitorBase
+    class AttachableVisitor : public DeviceObjectVisitorBase
     {
     public:
         void Visit(const TextureDeviceObject& object) override
         {
-            image = object.image;
-            memory = object.memory;
             imageView = object.imageView;
             sampler = object.sampler;
         }
         
+        void Visit(const VulkanAttachmentDeviceObject& object) override
+        {
+            imageView = object.view;
+            sampler = VK_NULL_HANDLE;
+        }
+        
     public:
-        VkDeviceMemory memory{ VK_NULL_HANDLE };
-        VkImage image{ VK_NULL_HANDLE };
         VkImageView imageView{ VK_NULL_HANDLE };
         VkSampler sampler{ VK_NULL_HANDLE };
     };
@@ -401,6 +403,22 @@ namespace Renderer
         VkSemaphore imgAvailableSemaphore;
         VkSemaphore renderFinishedSemaphore;
         VkFence frameFence;
+    };
+    
+    class AttachmentVisitor : public DeviceObjectVisitorBase
+    {
+    public:
+        void Visit(const VulkanAttachmentDeviceObject& object) override
+        {
+            image = object.image;
+            memory = object.memory;
+            view = object.view;
+        }
+        
+    public:
+        VkImage image{ VK_NULL_HANDLE };
+        VkDeviceMemory memory{ VK_NULL_HANDLE };
+        VkImageView view{ VK_NULL_HANDLE };
     };
     
     class DestroyVisitor : public MutableDeviceObjectVisitorBase

@@ -41,7 +41,7 @@ void Effect::AddUniformBuffer(ModuleStage stage, uint32_t binding, const Buffer&
     mUniformBuffers.push_back(&buffer);
 }
 
-void Effect::AddTexture(ModuleStage stage, uint32_t binding, const Image& image)
+void Effect::AddTexture(ModuleStage stage, uint32_t binding, const Attachable& image)
 {
     AddUniform(UniformType::Sampler, stage, binding, 1);
     

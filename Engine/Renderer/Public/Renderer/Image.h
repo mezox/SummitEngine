@@ -1,6 +1,7 @@
 #pragma once
 #include <Renderer/RendererBase.h>
 #include <Renderer/Resources/DeviceResource.h>
+#include <Renderer/Resources/Framebuffer.h>
 
 #include "SharedDeviceTypes.h"
 #include "DeviceObject.h"
@@ -16,23 +17,6 @@ namespace Renderer
         Image1D,
         Image2D,
         Image3D
-    };
-    
-    enum class ImageUsage
-    {
-        Undefined,
-        Sampled,
-        ColorAttachment,
-        DepthStencilAttachment,
-    };
-    
-    enum class ImageLayout
-    {
-        Undefined,
-        Present,
-        ColorAttachment,
-        DepthAttachment,
-        ShaderReadOnly,
     };
     
     class RENDERER_API ImageDesc
@@ -56,7 +40,7 @@ namespace Renderer
         void* data{ nullptr };
     };
     
-    class RENDERER_API Image : public DeviceResource
+    class RENDERER_API Image
     {
     public:
         Image(uint32_t w, uint32_t h, Format format, void* data);
@@ -68,38 +52,11 @@ namespace Renderer
         Image& operator=(const Image& other) = delete;
         Image& operator=(Image&& other) = delete;
         
-        static Image CreateFromFile(const std::string& path);
-        
     private:
         // Image meta data
         uint32_t mWidth{ 0 };
         uint32_t mHeight{ 0 };
         Format mFormat{ Format::Undefined };
         std::unique_ptr<std::vector<unsigned char>> mData{ nullptr };
-    };
-    
-    enum class AddressMode
-    {
-        Repeat,
-        MirroredRepeat,
-        ClampToEdge,
-        MirrorClampToEdge,
-        ClampToBorder
-    };
-    
-    enum class FilterMode
-    {
-        Linear,
-        Nearest
-    };
-    
-    struct SamplerDesc
-    {
-        FilterMode minFilter{ FilterMode::Linear };
-        FilterMode magFilter{ FilterMode::Linear };
-        AddressMode uAddressMode{ AddressMode::Repeat };
-        AddressMode vAddressMode{ AddressMode::Repeat };
-        AddressMode wAddressMode{ AddressMode::Repeat };
-        uint8_t anisotropy{ 0 };
     };
 }

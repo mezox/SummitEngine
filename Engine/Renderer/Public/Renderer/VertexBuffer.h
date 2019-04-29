@@ -179,13 +179,13 @@ namespace Renderer
         }
     };
     
-    template<typename PositionType, typename IndexType>
+    template<typename DataStreamType, typename IndexType>
     class VertexBufferPI : public VertexBuffer<2>
     {
     public:
-        VertexBufferStream<PositionType>* GetPositionDataStream()
+        VertexBufferStream<DataStreamType>* GetPositionDataStream()
         {
-            return (VertexBufferStream<PositionType>*)(mStreams[0]);
+            return (VertexBufferStream<DataStreamType>*)(mStreams[0]);
         }
         
         VertexBufferStream<IndexType>* GetIndexDataStream()
@@ -194,18 +194,18 @@ namespace Renderer
         }
     };
     
-    template<typename PositionType, typename ColorType, typename IndexType>
+    template<typename Data0StreamType, typename Data1StreamType, typename IndexType>
     class VertexBufferPCI : public VertexBuffer<3>
     {
     public:
-        VertexBufferStream<PositionType>& GetPositionDataStream()
+        VertexBufferStream<Data0StreamType>& GetPositionDataStream()
         {
             if(!mStreams[0])
             {
-                mStreams[0] = std::make_unique<VertexBufferStream<PositionType>>(BufferUsage::VertexBuffer);
+                mStreams[0] = std::make_unique<VertexBufferStream<Data0StreamType>>(BufferUsage::VertexBuffer);
             }
             
-            return (VertexBufferStream<PositionType>&)(*mStreams[0].get());
+            return (VertexBufferStream<Data0StreamType>&)(*mStreams[0].get());
         }
         
         VertexBufferStream<IndexType>& GetIndexDataStream()
@@ -218,14 +218,14 @@ namespace Renderer
             return (VertexBufferStream<IndexType>&)(*mStreams[1].get());
         }
         
-        VertexBufferStream<ColorType>& GetColorDataStream()
+        VertexBufferStream<Data1StreamType>& GetColorDataStream()
         {
             if(!mStreams[2])
             {
-                mStreams[2] = std::make_unique<VertexBufferStream<ColorType>>(BufferUsage::VertexBuffer);
+                mStreams[2] = std::make_unique<VertexBufferStream<Data1StreamType>>(BufferUsage::VertexBuffer);
             }
             
-            return (VertexBufferStream<ColorType>&)(*mStreams[2].get());
+            return (VertexBufferStream<Data1StreamType>&)(*mStreams[2].get());
         }
     };
     

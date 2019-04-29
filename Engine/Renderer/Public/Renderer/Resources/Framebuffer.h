@@ -2,13 +2,7 @@
 
 #include "DeviceResource.h"
 
-#include <Math/Vector4.h>
-
-#include <Core/Templates.h>
 #include <Renderer/RendererBase.h>
-#include <Renderer/SharedDeviceTypes.h>
-#include <Renderer/DeviceObject.h>
-
 #include <Renderer/SharedDeviceTypes.h>
 
 #include <vector>
@@ -16,53 +10,75 @@
 
 namespace Renderer
 {
-    class IRenderer;
-    
-    /*!
-     @brief An enumerator of framebuffer attachment types.
-     */
-    enum class AttachmentType : uint8_t
+    enum class AttachmentType
     {
-        Undefined = 0x00000000,
-        Color = 0x00000001,
-        Stencil = 0x00000002,
-        Depth = 0x00000004
+        Undefined,
+        Color,
+        DepthStencil
     };
     
     /*!
-     @brief Framebuffer's attachment.
+     @brief Descriptor of attachable image.
      */
-    class RENDERER_API Attachment final : public DeviceResource
+    struct AttachableDescriptor
+    {
+        /*!
+         @brief Width of the attachment. 0 by default.
+         */
+        uint32_t width{ 0 };
+        
+        /*!
+         @brief Height of the attachment. 0 by default.
+         */
+        uint32_t height{ 0 };
+        
+        /*!
+         @brief Format of stored data. Undefined by default.
+         */
+        Format format{ Format::Undefined };
+        
+        /*!
+         @brief Usage of underlying image. Undefined by default.
+         */
+        ImageUsage usage{ ImageUsage::Undefined };
+    };
+    
+    /*!
+     @brief Class representing buffer/image attachable to framebuffer.
+     */
+    class RENDERER_API Attachable : public DeviceResource
     {
     public:
         /*!
-         @brief Constructs framebuffer attachment.
-         @param format Format of stored data.
-         @param type Type of stored data.
+         @brief Constructs attachable buffer.
+         @param desc Attachable descriptor.
          */
-        Attachment(Format format, AttachmentType type);
+        Attachable(const AttachableDescriptor& desc);
         
         /*!
-         @brief Constructs framebuffer attachment.
-         @param format Format of stored data.
-         @param type Type of stored data.
-         @param deviceObject Device object handler.
+         @brief Constructs attachable buffer.
+         @param desc Attachable descriptor.
+         @param deviceObject Device object handle.
          */
-        Attachment(Format format, AttachmentType type, DeviceObject&& deviceObject);
+        Attachable(const AttachableDescriptor& desc, DeviceObject&& deviceObject);
         
         /*!
          @brief Attachment destructor.
          */
-        virtual ~Attachment() = default;
+        virtual ~Attachable() = default;
         
-        Attachment(Attachment&& other) = default;
-        Attachment& operator=(Attachment&& other) = default;
+        Attachable(Attachable&& other) = default;
+        Attachable& operator=(Attachable&& other) = default;
         
         /*!
-         @brief Sets clear value.
-         @param value Clear value, this might be either color or simple value.
+         @brief Returns width of the attachment.
          */
-        void SetClearValue(const Graphics::Color value);
+        [[nodiscard]] uint32_t GetWidth() const noexcept;
+        
+        /*!
+         @brief Returns height of the attachment.
+         */
+        [[nodiscard]] uint32_t GetHeight() const noexcept;
         
         /*!
          @brief Returns format of attachment.
@@ -70,9 +86,42 @@ namespace Renderer
         [[nodiscard]] Format GetFormat() const noexcept;
         
         /*!
-         @brief Returns type of attachment.
+         @brief Returns usage of underlying image.
          */
-        [[nodiscard]] AttachmentType GetType() const noexcept;
+        [[nodiscard]] ImageUsage GetUsage() const noexcept;
+        
+    private:
+        /*!
+         @brief Descriptor of attachable image.
+         */
+        AttachableDescriptor mDescriptor;
+    };
+    
+    /*!
+     @brief Framebuffer's attachment.
+     */
+    class RENDERER_API Attachment : public Attachable
+    {
+    public:
+        /*!
+         @brief Constructs framebuffer attachment.
+         @param desc Attachable descriptor.
+         @param clearValue Clear value.
+         */
+        Attachment(const AttachableDescriptor& desc, Graphics::Color clearValue);
+        
+        /*!
+         @brief Constructs framebuffer attachment.
+         @param desc Attachable descriptor.
+         @param clearValue Clear value.
+         @param deviceObject Device object handle.
+         */
+        Attachment(const AttachableDescriptor& desc, Graphics::Color clearValue, DeviceObject&& deviceObject);
+        
+        /*!
+         @brief Attachment destructor.
+         */
+        virtual ~Attachment() = default;
         
         /*!
          @brief Returns clear value.
@@ -81,14 +130,9 @@ namespace Renderer
         
     private:
         /*!
-         @brief Format of stored data. Undefined by default.
-         */
-        Format mFormat{ Format::Undefined };
-        
-        /*!
          @brief Type of attachment. Undefined by default.
          */
-        AttachmentType mType{ AttachmentType::Undefined };
+        ImageUsage mUsage{ ImageUsage::Undefined };
         
         /*!
          @brief Clear value.
@@ -128,14 +172,31 @@ namespace Renderer
         /*!
          @brief Adds attachment description to the framebuffer.
          @param format Format of stored data.
-         @param type Type of stored data.
+         @param usage Usage of underlying image.
          */
-        void AddAttachment(Format format, AttachmentType type) noexcept;
+        void AddAttachment(Format format, ImageUsage usage, Graphics::Color clearValue) noexcept;
+        
+        /*!
+         @brief Retrieves attachments by given type.
+         @param AttachmentType Type of the attachment.
+         @return Array of pointers to attachments.
+         */
+        const std::vector<Attachment*> GetAttachment(AttachmentType type) noexcept;
         
         /*!
          @brief Sets new width & height of the framebuffer.
          */
         void Resize(uint32_t width, uint32_t height) noexcept;
+        
+        /*!
+         @brief Returns width of the attachment.
+         */
+        [[nodiscard]] uint32_t GetWidth() const noexcept;
+        
+        /*!
+         @brief Returns height of the attachment.
+         */
+        [[nodiscard]] uint32_t GetHeight() const noexcept;
         
         /*!
          @brief Checks if framebuffer contains attachment given by type.
@@ -149,16 +210,6 @@ namespace Renderer
          @return Array of clear values.
          */
         [[nodiscard]] std::vector<Graphics::Color> GetClearValues() const noexcept;
-        
-        /*!
-         @brief Returns width of the framebuffer.
-         */
-        [[nodiscard]] uint32_t GetWidth() const noexcept;
-        
-        /*!
-         @brief Returns height of the framebuffer.
-         */
-        [[nodiscard]] uint32_t GetHeight() const noexcept;
         
     private:
         /*!
@@ -177,9 +228,3 @@ namespace Renderer
         std::vector<std::shared_ptr<Attachment>> mAttachments;
     };
 }
-
-template<>
-struct BitMaskOperatorEnable<Renderer::AttachmentType>
-{
-    static const bool enable = true;
-};

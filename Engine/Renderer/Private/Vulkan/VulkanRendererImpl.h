@@ -32,8 +32,9 @@ namespace Renderer
         void CreateFramebuffer(Framebuffer& desc, const RenderPass& renderPass) override;
         void CreateBuffer(const BufferDesc& desc, DeviceObject& buffer) override;
         DeviceObject CreateImage(const ImageDesc& desc) override;
-        void CreateSampler(const SamplerDesc& desc, DeviceObject& sampler) override;
+        
         void CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture) override;
+        
         DeviceObject CreateSemaphore(const SemaphoreDescriptor& desc) const override;
         DeviceObject CreateFence(const FenceDescriptor& desc) const override;
         DeviceObject CreateEvent(const EventDescriptor& desc) const override;
@@ -49,6 +50,8 @@ namespace Renderer
         
         CmdRecordResult BeginCommandRecording() override;
         CmdRecordResult BeginRenderPass(const RenderPass& renderPass) override;
+        CmdRecordResult SetViewport(const Rectangle<float>& viewport) override;
+        CmdRecordResult SetScissor(const Rectangle<uint32_t>& scissor) override;
         CmdRecordResult EndRenderPass() override;
         CmdRecordResult EndCommandRecording(SwapChainBase* swapChain) override;
         
@@ -84,7 +87,6 @@ namespace Renderer
         std::vector<DeviceObject> mCommandBuffers;
         VkDescriptorPool mDescriptorPool;
         
-        VkFormat mImgFormat{ VK_FORMAT_B8G8R8A8_UNORM };   //TODO: Initialize
         VkQueue mGraphicsQueue{ VK_NULL_HANDLE };
         
         std::vector<DeviceObject*> mResourceManager;
