@@ -50,6 +50,7 @@ namespace Renderer
         
         CmdRecordResult BeginCommandRecording() override;
         CmdRecordResult BeginRenderPass(const RenderPass& renderPass) override;
+        CmdRecordResult NextSubpass() override;
         CmdRecordResult SetViewport(const Rectangle<float>& viewport) override;
         CmdRecordResult SetScissor(const Rectangle<uint32_t>& scissor) override;
         CmdRecordResult EndRenderPass() override;

@@ -22,6 +22,8 @@ namespace Renderer
     enum class UniformType;
     enum class ModuleStage;
     enum MemoryType : uint32_t;
+    enum class StageMask : uint32_t;
+    enum class AccessMask : uint32_t;
 }
 
 // Convertors from Renderer types to Vulkan types
@@ -35,6 +37,9 @@ template<> struct TypeLinkerAuto<Renderer::AddressMode> : public TypeLinkerTempl
 template<> struct TypeLinkerAuto<Renderer::FilterMode> : public TypeLinkerTempl<Renderer::FilterMode, VkFilter> {};
 template<> struct TypeLinkerAuto<Renderer::UniformType> : public TypeLinkerTempl<Renderer::UniformType, VkDescriptorType> {};
 template<> struct TypeLinkerAuto<Renderer::ModuleStage> : public TypeLinkerTempl<Renderer::ModuleStage, VkShaderStageFlagBits> {};
+
+template<> struct TypeLinkerAuto<Renderer::StageMask> : public TypeLinkerTempl<Renderer::StageMask, VkPipelineStageFlags> {};
+template<> struct TypeLinkerAuto<Renderer::AccessMask> : public TypeLinkerTempl<Renderer::AccessMask, VkAccessFlags> {};
 
 template<> struct TypeLinkerAuto<Renderer::Rectangle<float>> : public TypeLinkerTempl<Renderer::Rectangle<float>, VkViewport> {};
 template<> struct TypeLinkerAuto<Renderer::Rectangle<uint32_t>> : public TypeLinkerTempl<Renderer::Rectangle<uint32_t>, VkRect2D> {};

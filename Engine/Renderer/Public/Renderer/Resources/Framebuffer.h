@@ -10,11 +10,16 @@
 
 namespace Renderer
 {
+    /*!
+     @brief Enumerator of attachment types.
+     */
     enum class AttachmentType
     {
         Undefined,
+        Input,
         Color,
-        DepthStencil
+        DepthStencil,
+        Resolve,
     };
     
     /*!
@@ -130,16 +135,20 @@ namespace Renderer
         
     private:
         /*!
-         @brief Type of attachment. Undefined by default.
-         */
-        ImageUsage mUsage{ ImageUsage::Undefined };
-        
-        /*!
-         @brief Clear value.
+         @brief Clear value whole image is cleared to on render pass begin.
          */
         Graphics::Color mClearValue;
+        
+        // Load operation
+        // Store operation
+        
+        ImageLayout mInitialLayout{ ImageLayout::Undefined };
+        ImageLayout mFinalLayout{ ImageLayout::Undefined };
     };
     
+    /*!
+     @brief Class Framebuffer represents a collection of attachable render buffers.
+     */
     class RENDERER_API Framebuffer final : public DeviceResource
     {
         friend class SwapChainBase;
@@ -181,7 +190,7 @@ namespace Renderer
          @param AttachmentType Type of the attachment.
          @return Array of pointers to attachments.
          */
-        const std::vector<Attachment*> GetAttachment(AttachmentType type) noexcept;
+        const std::vector<Attachment*> GetAttachment(AttachmentType type) const noexcept;
         
         /*!
          @brief Sets new width & height of the framebuffer.

@@ -17,6 +17,7 @@ include_directories(
 set(EXTERNAL_DEPENDENCIES
 	Microprofile
     imgui
+    doctest
 )
 
 set(DEPENDENCIES
@@ -51,6 +52,7 @@ set(PUBLIC_SOURCES
     Public/Renderer/Resources/Buffer.h
     Public/Renderer/Resources/Texture.h
     Public/Renderer/Resources/Synchronization.h
+    Public/Renderer/Resources/Types.h
 )
 
 set(PRIVATE_SOURCES

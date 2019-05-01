@@ -96,7 +96,7 @@ void Framebuffer::AddAttachment(const Format format, const ImageUsage usage, con
     mAttachments.push_back(std::make_shared<Attachment>(desc, clearValue));
 }
 
-const std::vector<Attachment*> Framebuffer::GetAttachment(AttachmentType type) noexcept
+const std::vector<Attachment*> Framebuffer::GetAttachment(AttachmentType type) const noexcept
 {
     std::vector<Attachment*> attachmentPtrs;
     for(const auto& attachment : mAttachments)

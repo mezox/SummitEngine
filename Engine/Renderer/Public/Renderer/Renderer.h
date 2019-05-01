@@ -90,6 +90,8 @@ namespace Renderer
          */
         virtual CmdRecordResult BeginRenderPass(const RenderPass& renderPass) = 0;
         
+        virtual CmdRecordResult NextSubpass() = 0;
+        
         
         virtual CmdRecordResult SetViewport(const Rectangle<float>& viewport) = 0;
         virtual CmdRecordResult SetScissor(const Rectangle<uint32_t>& scissor) = 0;
@@ -157,9 +159,12 @@ namespace Renderer
     public:
         Effect effect;
         bool depthTestEnabled{ false };
+        bool depthWriteEnabled{ false };
+        bool useDepth{ false };
         
         DeviceObject mDeviceObject;
         Vector2f mViewPort;
         Vector2f mOffset;
+        uint32_t mSubpassIndex{ 0 };
     };
 }

@@ -2,6 +2,7 @@
 
 #include <Renderer/RendererBase.h>
 #include <Renderer/DeviceObject.h>
+#include <Rednerer/Resources/Types.h>
 
 namespace Renderer
 {
@@ -23,6 +24,7 @@ namespace Renderer
         virtual ~DeviceResource() = default;
         
         DeviceResource() = default;
+        
         DeviceResource(const DeviceResource& other) = delete;
         DeviceResource(DeviceResource&& other) = default;
         DeviceResource& operator=(const DeviceResource& other) = delete;
@@ -47,4 +49,5 @@ namespace Renderer
          */
         DeviceObject mDeviceResource;
     };
+
 }

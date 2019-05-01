@@ -1,9 +1,10 @@
 #version 450
 
-layout(binding = 0) uniform UniformBufferObject {
+layout (push_constant) uniform PushConstants
+{
 	vec2 scale;
 	vec2 translate;
-} ubo;
+} guiSettings;
 
 layout (location = 0) in vec2 position;
 layout (location = 1) in vec4 color;
@@ -21,5 +22,5 @@ void main()
 {
 	outTexCoords = texCoords;
 	outColor = color;
-	gl_Position = vec4(position * vec2(2.0/1280.0, 2.0/720.0) + vec2(-1.0, -1.0), 0.0, 1.0);
+	gl_Position = vec4(position * guiSettings.scale + guiSettings.translate, 0.0, 1.0);
 }

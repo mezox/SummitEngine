@@ -64,6 +64,7 @@ namespace PAL::RenderAPI
         void CreateRenderPass(const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const;
         void DestroyRenderPass(VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator) const;
         void BeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) const;
+        void NextSubpass(VkCommandBuffer commandBuffer, VkSubpassContents contents) const;
         void EndRenderPass(VkCommandBuffer commandBuffer) const;
         void BindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const;
         void Draw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const;
@@ -169,6 +170,7 @@ namespace PAL::RenderAPI
         PFN_vkCmdBindPipeline vkCmdBindPipeline{ nullptr };
         PFN_vkCmdDraw vkCmdDraw{ nullptr };
         PFN_vkCmdPushConstants vkCmdPushConstants{ nullptr };
+        PFN_vkCmdNextSubpass vkCmdNextSubpass{ nullptr };
         
         PFN_vkCreateFramebuffer vkCreateFramebuffer{ nullptr };
         PFN_vkDestroyFramebuffer vkDestroyFramebuffer{ nullptr };

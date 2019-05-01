@@ -108,6 +108,11 @@ namespace PAL::RenderAPI
         vkCmdBeginRenderPass(commandBuffer, pRenderPassBegin, contents);
     }
     
+    void VulkanDevice::NextSubpass(VkCommandBuffer commandBuffer, VkSubpassContents contents) const
+    {
+        vkCmdNextSubpass(commandBuffer, contents);
+    }
+    
     void VulkanDevice::EndRenderPass(VkCommandBuffer commandBuffer) const
     {
         vkCmdEndRenderPass(commandBuffer);
@@ -490,6 +495,7 @@ namespace PAL::RenderAPI
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdSetViewport);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdSetScissor);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdPushConstants);
+        LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCmdNextSubpass);
         
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkCreateDescriptorSetLayout);
         LOAD_VK_DEVICE_LEVEL_FUNCTION(mLogicalDevice, loadFunc, vkDestroyDescriptorSetLayout);

@@ -138,6 +138,20 @@ namespace Renderer::Vulkan
         std::vector<VkClearValue> mClearValues;     //TODO: This should not use dynamic structures
     };
     
+    class NextRenderPassCommand final : public VulkanCommand<NextRenderPassCommand>
+    {
+    public:
+        [[nodiscard]] std::string GetDescription() const noexcept
+        {
+            return "CommandBuffer::NextRenderPassCommand";
+        }
+        
+        void OnExecute(const PAL::RenderAPI::VulkanDevice& device, const VkCommandBuffer& cmdBuffer) const
+        {
+            device.NextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+        }
+    };
+    
     class EndRenderPass final : public VulkanCommand<EndRenderPass>
     {
     public:

@@ -358,14 +358,14 @@ std::unique_ptr<SwapChainBase> VulkanRenderer::CreateSwapChain(const DeviceObjec
         AttachableDescriptor attachmentDesc;
         attachmentDesc.width = width;
         attachmentDesc.height = height;
-        attachmentDesc.format = Format::D32F;
+        attachmentDesc.format = Format::B8G8R8A8;
         attachmentDesc.usage = ImageUsage::ColorAttachment;
         
         Framebuffer framebuffer;
         framebuffer.Resize(width, height);
-        framebuffer.AddAttachment(std::make_shared<Attachment>(attachmentDesc, Graphics::Color(20, 128, 224, 255), Basify(attachmentDO)));
         framebuffer.AddAttachment(depthAttachment);
-        framebuffer.SetDeviceObject(Basify(CreateFramebufferImpl(width, height, { swapImageView, depthAttachmentDO.view }, rpv.renderPass)));
+        framebuffer.AddAttachment(std::make_shared<Attachment>(attachmentDesc, Graphics::Color(20, 128, 224, 255), Basify(attachmentDO)));
+        framebuffer.SetDeviceObject(Basify(CreateFramebufferImpl(width, height, { depthAttachmentDO.view, swapImageView,  }, rpv.renderPass)));
         
         swapChain->AddFramebuffer(std::move(framebuffer));
     }
@@ -615,17 +615,17 @@ void VulkanRenderer::CreatePipeline(Pipeline& pipeline, const DeviceObject& rend
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.layout = layout;
     pipelineInfo.renderPass = rpv.renderPass;
-    pipelineInfo.subpass = 0;
+    pipelineInfo.subpass = pipeline.mSubpassIndex;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDynamicState = &dynamicState;
     
-    if(pipeline.depthTestEnabled)
+    if(pipeline.depthTestEnabled || pipeline.depthWriteEnabled)
     {
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = VK_TRUE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencil.depthTestEnable = pipeline.depthTestEnabled;
+        depthStencil.depthWriteEnable = pipeline.depthWriteEnabled;
+        depthStencil.depthCompareOp = pipeline.depthWriteEnabled ? VK_COMPARE_OP_LESS : VK_COMPARE_OP_LESS_OR_EQUAL;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.minDepthBounds = 0.0f;
         depthStencil.maxDepthBounds = 1.0f;
@@ -881,6 +881,7 @@ void VulkanRenderer::CreateFramebuffer(Framebuffer& framebuffer, const RenderPas
         vulkanImageDescriptor.tiling = VK_IMAGE_TILING_OPTIMAL;
         vulkanImageDescriptor.memoryProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; //ConvertType(attachment->GetUsage());
         vulkanImageDescriptor.usage = isDepthAttachment ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        //vulkanImageDescriptor.usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
         
         const ImageDeviceObject imageDeviceObject = CreateImageImpl(vulkanImageDescriptor);
         
@@ -1089,67 +1090,109 @@ void VulkanRenderer::RenderGui(const VertexBufferBase& vb, const Pipeline& pipel
 
 void VulkanRenderer::CreateRenderPass(RenderPass& renderPass) const
 {
-    _ASSERT(!renderPass.mAttachmentDescs.empty() && "No attachments defined for render pass");
-    
-    const auto numAttachments = renderPass.mAttachmentDescs.size();
+    _ASSERT(!renderPass.mSubPasses.empty() && "No subpasses defined for render pass");
+    _ASSERT(!renderPass.mAttachments.empty() && "No attachments defined for render pass");
     
     std::vector<VkAttachmentDescription> attachments;
-    attachments.reserve(numAttachments);
-    
-    std::vector<VkAttachmentReference> colorAttachmentRefs;
-    VkAttachmentReference depthAttachmentRef{ VK_NULL_HANDLE };
-    
-    for(uint32_t id{ 0 }; id < numAttachments; ++id)
+    attachments.reserve(renderPass.mAttachments.size());
+
+    // Create attachment descriptions
+    for(const auto& attachmentDesc : renderPass.mAttachments)
     {
-        const auto& attachmentDesc = renderPass.mAttachmentDescs[id];
-        
         VkAttachmentDescription attachment{};
         attachment.flags = 0;
         attachment.format = ConvertType(attachmentDesc.format);
         attachment.samples = VK_SAMPLE_COUNT_1_BIT;
         attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachment.finalLayout = ConvertType(attachmentDesc.layout);
-        
-        VkAttachmentReference attachmentRef{};
-        attachmentRef.attachment = id;  // Index to pAttachments array in CreateInfo
-        
-        if(!Detail::IsDepthFormat(attachmentDesc.format))
-        {
-            attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            colorAttachmentRefs.push_back(std::move(attachmentRef));
-        }
-        else
-        {
-            attachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            depthAttachmentRef = std::move(attachmentRef);
-        }
-        
+        attachment.initialLayout = ConvertType(attachmentDesc.initialLayout);
+        attachment.finalLayout = ConvertType(attachmentDesc.finalLayout);
         attachments.push_back(std::move(attachment));
     }
     
-    VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.flags = 0;
-    subpass.inputAttachmentCount = 0;
-    subpass.pInputAttachments = nullptr;
-    subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size());
-    subpass.pColorAttachments = colorAttachmentRefs.data();
-    subpass.preserveAttachmentCount = 0;
-    subpass.pResolveAttachments = nullptr;
-    subpass.pPreserveAttachments = nullptr;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+    std::vector<std::unique_ptr<std::vector<VkAttachmentReference>>> attachmentRefs;
+    
+    const auto CreateAttachmentReference = [&attachmentRefs](const Subpass& pass, const AttachmentType type) -> const std::vector<VkAttachmentReference>* {
+        
+        const auto subpassRefs = pass.GetAttachments(type);
+        if(subpassRefs.empty())
+        {
+            attachmentRefs.push_back(nullptr);
+            return attachmentRefs.back().get();
+        }
+        
+        auto internalReferences = std::make_unique<std::vector<VkAttachmentReference>>();
+        internalReferences->reserve(subpassRefs.size());
+        
+        for(const auto& subpassRef : subpassRefs)
+        {
+            VkAttachmentReference ref{};
+            ref.attachment = subpassRef->attachmentId;
+            ref.layout = ConvertType(subpassRef->attachmentLayout);
+            internalReferences->push_back(std::move(ref));
+        }
+        
+        attachmentRefs.push_back(std::move(internalReferences));
+        return attachmentRefs.back().get();
+    };
+    
+    std::vector<VkSubpassDescription> subpassDescs;
+    subpassDescs.reserve(renderPass.mSubPasses.size());
+    
+    // Create subpass descriptions
+    for(const auto& subPass : renderPass.mSubPasses)
+    {
+        const auto* inputRefs = CreateAttachmentReference(subPass, AttachmentType::Input);
+        const auto* colorRefs = CreateAttachmentReference(subPass, AttachmentType::Color);
+        const auto* depthRefs = CreateAttachmentReference(subPass, AttachmentType::DepthStencil);
+        const auto* resolveRefs = CreateAttachmentReference(subPass, AttachmentType::Resolve);
+        
+        VkSubpassDescription subpass{};
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.flags = 0;
+        subpass.inputAttachmentCount = !inputRefs ? 0 : static_cast<uint32_t>(inputRefs->size());;
+        subpass.pInputAttachments = !inputRefs ? nullptr : inputRefs->data();
+        subpass.colorAttachmentCount = !colorRefs ? 0 : static_cast<uint32_t>(colorRefs->size());
+        subpass.pColorAttachments = !colorRefs ? nullptr : colorRefs->data();
+        subpass.preserveAttachmentCount = 0;
+        subpass.pResolveAttachments = nullptr;
+        subpass.pPreserveAttachments = nullptr;
+        subpass.pDepthStencilAttachment = [depthRefs](){
+            return !depthRefs ? nullptr : depthRefs->data();
+        }();
+        
+        subpassDescs.push_back(std::move(subpass));
+    }
+    
+    std::vector<VkSubpassDependency> dependencies;
+    dependencies.reserve(renderPass.mDependencies.size());
+    
+    for(const auto& subpassDepdendency : renderPass.mDependencies)
+    {
+        VkSubpassDependency dependency{};
+        dependency.srcSubpass = subpassDepdendency.srcIdx;
+        dependency.dstSubpass = subpassDepdendency.dstIdx;
+        dependency.srcStageMask = ConvertType(subpassDepdendency.srcStageMask);
+        dependency.dstStageMask = ConvertType(subpassDepdendency.dstStageMask);
+        dependency.srcAccessMask = ConvertType(subpassDepdendency.srcAccessMask);
+        dependency.dstAccessMask = ConvertType(subpassDepdendency.dstAccessMask);
+        dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        dependencies.push_back(std::move(dependency));
+    }
     
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.pNext = nullptr;
+    renderPassInfo.flags = 0;
     renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
     renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-
+    renderPassInfo.subpassCount = static_cast<uint32_t>(subpassDescs.size());
+    renderPassInfo.pSubpasses = subpassDescs.data();
+    renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+    renderPassInfo.pDependencies = dependencies.data();
+    
     renderPass.SetDeviceObject(Basify(RenderPassDeviceObject{ mDevice->CreateManagedRenderPass(&renderPassInfo, nullptr) }));
 }
 
@@ -1189,7 +1232,7 @@ VulkanAttachmentDeviceObject VulkanRenderer::CreateAttachment(const uint32_t wid
     vulkanImageDescriptor.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     vulkanImageDescriptor.tiling = VK_IMAGE_TILING_OPTIMAL;
     vulkanImageDescriptor.memoryProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    vulkanImageDescriptor.usage = ConvertType(usage);
+    vulkanImageDescriptor.usage = ConvertType(usage) | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     
     auto imageObject = CreateImageImpl(vulkanImageDescriptor);
     auto imageView = CreateImageView(imageObject.image, vulkanImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -1320,6 +1363,11 @@ CmdRecordResult VulkanRenderer::BeginRenderPass(const RenderPass& renderPass)
     mCmdList.push_back(Vulkan::BeginRenderPass(renderPass));
     
     return CmdRecordResult::Success;
+}
+
+CmdRecordResult VulkanRenderer::NextSubpass()
+{
+    mCmdList.push_back(NextRenderPassCommand());
 }
 
 CmdRecordResult VulkanRenderer::SetViewport(const Rectangle<float>& viewport)

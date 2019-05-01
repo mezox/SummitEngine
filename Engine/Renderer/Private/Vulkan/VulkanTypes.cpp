@@ -54,11 +54,12 @@ auto TypeLinkerTempl<Renderer::ImageLayout, VkImageLayout>::operator()(const fro
 {
     switch(imageLayout)
     {
-        case Renderer::ImageLayout::Undefined: throw std::runtime_error("Undefined image layout");
-        case Renderer::ImageLayout::Present: return to_t{ VK_IMAGE_LAYOUT_PRESENT_SRC_KHR };
-        case Renderer::ImageLayout::ColorAttachment: return to_t{ VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-        case Renderer::ImageLayout::DepthAttachment: return to_t{ VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-        case Renderer::ImageLayout::ShaderReadOnly: return to_t{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+        case Renderer::ImageLayout::Undefined: return VK_IMAGE_LAYOUT_UNDEFINED;
+        case Renderer::ImageLayout::Present: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        case Renderer::ImageLayout::ColorAttachment: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        case Renderer::ImageLayout::DepthAttachment: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        case Renderer::ImageLayout::ShaderReadOnly: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        case Renderer::ImageLayout::DepthStencilReadOnly: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     }
 }
 
@@ -167,5 +168,51 @@ auto TypeLinkerTempl<Renderer::Rectangle<uint32_t>, VkRect2D>::operator()(const 
     rect.offset.x = type.offset.x;
     rect.offset.y = type.offset.y;
     return rect;
+}
+
+template<>
+auto TypeLinkerTempl<Renderer::StageMask, VkPipelineStageFlags>::operator()(const from_t& mask) -> to_t
+{
+    VkPipelineStageFlags stageFlags{ 0 };
+    
+    if(mask == Renderer::StageMask::Undefined)
+        throw std::runtime_error("Undefined stage mask flag");
+    if(mask == Renderer::StageMask::EarlyFragmentTest)
+        stageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    if(mask == Renderer::StageMask::LateFragmentTest)
+        stageFlags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    if(mask == Renderer::StageMask::ColorAttachment)
+        stageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    if(mask == Renderer::StageMask::FragmentShader)
+        stageFlags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    if(mask == Renderer::StageMask::BottomOfPipe)
+        stageFlags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        
+    return stageFlags;
+}
+
+template<>
+auto TypeLinkerTempl<Renderer::AccessMask, VkAccessFlags>::operator()(const from_t& mask) -> to_t
+{
+    VkAccessFlags accessFlags{ 0 };
+    
+    if(mask == Renderer::AccessMask::Undefined)
+        throw std::runtime_error("Undefined access mask flag");
+    if(mask == Renderer::AccessMask::DepthStencilRead)
+        accessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    if(mask == Renderer::AccessMask::DepthStencilWrite)
+        accessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    if(mask == Renderer::AccessMask::ColorRead)
+        accessFlags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    if(mask == Renderer::AccessMask::ColorWrite)
+        accessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    if(mask == Renderer::AccessMask::InputRead)
+        accessFlags |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+    if(mask == Renderer::AccessMask::MemoryRead)
+        accessFlags |= VK_ACCESS_MEMORY_READ_BIT;
+    if(mask == Renderer::AccessMask::ShaderRead)
+        accessFlags |= VK_ACCESS_SHADER_READ_BIT;
+                    
+    return accessFlags;
 }
 

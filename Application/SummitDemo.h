@@ -23,6 +23,8 @@ namespace Demo
         SummitDemo(Summit::SummitEngine& engine);
         virtual ~SummitDemo() = default;
         
+        void SetupRenderPass();
+        
         void PushToEngine(Summit::SummitEngine& engine);
         void PopFromEngine(Summit::SummitEngine& engine);
         
@@ -49,18 +51,13 @@ namespace Demo
         Renderer::Pipeline depthPrePassPipeline;
         Renderer::Pipeline mQuadPipeline;
         
+        Renderer::RenderPass mAdvancedRenderPass;
+        
         std::unique_ptr<Application::Window> mWindow;
         
         std::unique_ptr<Renderer::Object3d> mObject;
         std::unique_ptr<Renderer::Object3d> mQuad;
         std::unique_ptr<Renderer::Texture> mTexture;
-        Renderer::Framebuffer mDepthPrePassFB;
-        Renderer::Framebuffer mGBuffer;
-        
-        Renderer::RenderPass mDepthPrePass;
-        Renderer::RenderPass mDefaultRenderPass;
-        
-        Renderer::RenderPass mSponzaRenderPass;
         
         Renderer::Camera mCamera;
         
