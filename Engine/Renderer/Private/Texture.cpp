@@ -57,9 +57,12 @@ Texture Texture::CreateFromFile(const std::string& path)
 #define DOCTEST_CONFIG_IMPLEMENTATION_IN_DLL
 #include <doctest.h>
 
-TEST_CASE("dll") {
-    printf("I am a Texture test!\n");
+TEST_SUITE_BEGIN("FlagMasks" * doctest::description("Tests if enumerators used as flags use type safe flag mask class"));
+TEST_CASE("MemoryTypes")
+{
+    REQUIRE(Core::FlagMaskTraits<MemoryType>::value == true);
 }
+TEST_SUITE_END();
 
 DOCTEST_SYMBOL_EXPORT void from_dll();   // to silence "-Wmissing-declarations" with GCC
 DOCTEST_SYMBOL_EXPORT void from_dll() {} // force the creation of a .lib file with MSVC

@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+#include <Core/FlagMask.h>
+
 namespace Renderer
 {
     enum class ImageType
@@ -35,8 +37,8 @@ namespace Renderer
         uint32_t mipMapLevels{ 0 };
         ImageType type{ ImageType::Image2D };
         Format format{ Format::Undefined };
-        ImageUsage usage{ ImageUsage::Undefined };
-        MemoryType memoryUsage{ MemoryType::Undefined };
+        Core::FlagMask<ImageUsage> usage;
+        Core::FlagMask<MemoryType> memoryUsage;
         void* data{ nullptr };
     };
     

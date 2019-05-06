@@ -2,7 +2,7 @@
 
 #include <Renderer/RendererBase.h>
 #include <Renderer/DeviceObject.h>
-#include <Rednerer/Resources/Types.h>
+#include <Renderer/Resources/Types.h>
 
 namespace Renderer
 {

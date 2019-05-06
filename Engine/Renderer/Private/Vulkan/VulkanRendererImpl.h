@@ -62,7 +62,7 @@ namespace Renderer
         
         [[nodiscard]] VkImageView CreateImageView(const VkImage& image, const VkFormat& format, VkImageAspectFlags flags) const;
         
-        VulkanAttachmentDeviceObject CreateAttachment(uint32_t width, uint32_t height, Format format, ImageUsage usage);
+        VulkanAttachmentDeviceObject CreateAttachment(uint32_t width, uint32_t height, Format format, Core::FlagMask<ImageUsage> usage);
 
     private:
         void CreateDevice(DeviceType type);

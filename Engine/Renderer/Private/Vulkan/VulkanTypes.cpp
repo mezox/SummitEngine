@@ -30,20 +30,17 @@ auto TypeLinkerTempl<Renderer::ImageType, VkImageType>::operator()(const from_t&
 }
 
 template<>
-auto TypeLinkerTempl<Renderer::ImageUsage, VkImageUsageFlags>::operator()(const from_t& imageUsage) -> to_t
+auto TypeLinkerTempl<Core::FlagMask<Renderer::ImageUsage>, VkImageUsageFlags>::operator()(const from_t& imageUsage) -> to_t
 {
     VkImageUsageFlags usageFlags{ 0 };
     
-    if(imageUsage == Renderer::ImageUsage::Undefined)
-        throw std::runtime_error("Undefined image usage");
-    
-    if(imageUsage == Renderer::ImageUsage::Sampled)
+    if(imageUsage.IsNoneSet())
+        throw std::runtime_error("Undefined image usage mask!");
+    if(imageUsage.IsSet(Renderer::ImageUsage::Sampled))
         usageFlags |= VK_IMAGE_USAGE_SAMPLED_BIT;
-        
-    if(imageUsage == Renderer::ImageUsage::ColorAttachment)
+    if(imageUsage.IsSet(Renderer::ImageUsage::ColorAttachment))
         usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        
-    if(imageUsage == Renderer::ImageUsage::DepthStencilAttachment)
+    if(imageUsage.IsSet(Renderer::ImageUsage::DepthStencilAttachment))
         usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     
     return usageFlags;
@@ -105,17 +102,17 @@ auto TypeLinkerTempl<Renderer::FilterMode, VkFilter>::operator()(const from_t& m
 }
 
 template<>
-auto TypeLinkerTempl<Renderer::MemoryType, VkMemoryPropertyFlags>::operator()(const from_t& memType) -> to_t
+auto TypeLinkerTempl<Core::FlagMask<Renderer::MemoryType>, VkMemoryPropertyFlags>::operator()(const from_t& memType) -> to_t
 {
     VkMemoryPropertyFlags flags{ 0 };
     
-    if(Renderer::MemoryType::Undefined & memType)
+    if(memType.IsNoneSet())
         throw std::runtime_error("Undefined memory property");
-    if(Renderer::MemoryType::DeviceLocal & memType)
+    if(memType.IsSet(Renderer::MemoryType::DeviceLocal))
         flags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    if(Renderer::MemoryType::HostVisible & memType)
+    if(memType.IsSet(Renderer::MemoryType::HostVisible))
         flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    if(Renderer::MemoryType::HostCoherent & memType)
+    if(memType.IsSet(Renderer::MemoryType::HostCoherent))
         flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
             
     return flags;
@@ -171,46 +168,46 @@ auto TypeLinkerTempl<Renderer::Rectangle<uint32_t>, VkRect2D>::operator()(const 
 }
 
 template<>
-auto TypeLinkerTempl<Renderer::StageMask, VkPipelineStageFlags>::operator()(const from_t& mask) -> to_t
+auto TypeLinkerTempl<Core::FlagMask<Renderer::StageMask>, VkPipelineStageFlags>::operator()(const from_t& mask) -> to_t
 {
     VkPipelineStageFlags stageFlags{ 0 };
     
-    if(mask == Renderer::StageMask::Undefined)
-        throw std::runtime_error("Undefined stage mask flag");
-    if(mask == Renderer::StageMask::EarlyFragmentTest)
+    if(mask.IsNoneSet())
+        throw std::runtime_error("Undefined memory property");
+    if(mask.IsSet(Renderer::StageMask::EarlyFragmentTest))
         stageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    if(mask == Renderer::StageMask::LateFragmentTest)
+    if(mask.IsSet(Renderer::StageMask::LateFragmentTest))
         stageFlags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    if(mask == Renderer::StageMask::ColorAttachment)
+    if(mask.IsSet(Renderer::StageMask::ColorAttachment))
         stageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    if(mask == Renderer::StageMask::FragmentShader)
+    if(mask.IsSet(Renderer::StageMask::FragmentShader))
         stageFlags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    if(mask == Renderer::StageMask::BottomOfPipe)
+    if(mask.IsSet(Renderer::StageMask::BottomOfPipe))
         stageFlags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
         
     return stageFlags;
 }
 
 template<>
-auto TypeLinkerTempl<Renderer::AccessMask, VkAccessFlags>::operator()(const from_t& mask) -> to_t
+auto TypeLinkerTempl<Core::FlagMask<Renderer::AccessMask>, VkAccessFlags>::operator()(const from_t& mask) -> to_t
 {
     VkAccessFlags accessFlags{ 0 };
     
-    if(mask == Renderer::AccessMask::Undefined)
+    if(mask.IsNoneSet())
         throw std::runtime_error("Undefined access mask flag");
-    if(mask == Renderer::AccessMask::DepthStencilRead)
+    if(mask.IsSet(Renderer::AccessMask::DepthStencilRead))
         accessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-    if(mask == Renderer::AccessMask::DepthStencilWrite)
+    if(mask.IsSet(Renderer::AccessMask::DepthStencilWrite))
         accessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    if(mask == Renderer::AccessMask::ColorRead)
+    if(mask.IsSet(Renderer::AccessMask::ColorRead))
         accessFlags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    if(mask == Renderer::AccessMask::ColorWrite)
+    if(mask.IsSet(Renderer::AccessMask::ColorWrite))
         accessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    if(mask == Renderer::AccessMask::InputRead)
+    if(mask.IsSet(Renderer::AccessMask::InputRead))
         accessFlags |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    if(mask == Renderer::AccessMask::MemoryRead)
+    if(mask.IsSet(Renderer::AccessMask::MemoryRead))
         accessFlags |= VK_ACCESS_MEMORY_READ_BIT;
-    if(mask == Renderer::AccessMask::ShaderRead)
+    if(mask.IsSet(Renderer::AccessMask::ShaderRead))
         accessFlags |= VK_ACCESS_SHADER_READ_BIT;
                     
     return accessFlags;

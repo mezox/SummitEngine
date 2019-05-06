@@ -31,6 +31,7 @@ set(PUBLIC_SOURCES
     Public/Core/TypeConvert.h
     Public/Core/Templates.h
     Public/Core/Assert.h
+    Public/Core/FlagMask.h
     Public/Core/Handle.h
     Public/Core/Platform.h
     Public/Core/TupleHash.h

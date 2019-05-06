@@ -31,6 +31,7 @@
 
 #define LOG_MODULE_ID LOG_MODULE_4BYTE('V','K','R','N')
 
+using namespace Core;
 using namespace Renderer;
 using namespace Renderer::Vulkan;
 using namespace PAL::FileSystem;
@@ -813,10 +814,10 @@ void VulkanRenderer::CreateBuffer(const BufferDesc& desc, DeviceObject& bufferOb
 {
     BufferDeviceObject bdo;
     
-    const auto vulkanMemoryType = ConvertType(desc.memoryUsage);
+    const VkMemoryPropertyFlags vulkanMemoryType = ConvertType(desc.memoryUsage);
     const auto vulkanBufferUsage = ConvertType(desc.usage);
     
-    if(desc.memoryUsage & MemoryType::DeviceLocal)
+    if(vulkanMemoryType & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
     {
         constexpr auto stagingBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         constexpr auto stagingMemoryType = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -835,7 +836,7 @@ void VulkanRenderer::CreateBuffer(const BufferDesc& desc, DeviceObject& bufferOb
         mDevice->DestroyBuffer(stagingBuffer.buffer, nullptr);
         mDevice->FreeMemory(stagingBuffer.memory, nullptr);
     }
-    else if(desc.memoryUsage & MemoryType::HostVisible)
+    else if(vulkanMemoryType & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
     {
         bdo = CreateBufferImpl(desc.bufferSize, vulkanBufferUsage, vulkanMemoryType, VK_SHARING_MODE_EXCLUSIVE);
         if(desc.data)
@@ -868,7 +869,7 @@ void VulkanRenderer::CreateFramebuffer(Framebuffer& framebuffer, const RenderPas
     
     for(auto attachment : framebuffer.mAttachments)
     {
-        const bool isDepthAttachment(attachment->GetUsage() & ImageUsage::DepthStencilAttachment);
+        const bool isDepthAttachment(attachment->GetUsage().IsSet(ImageUsage::DepthStencilAttachment));
         
         VulkanImageDesc vulkanImageDescriptor;
         vulkanImageDescriptor.width = attachment->GetWidth();
@@ -914,8 +915,9 @@ DeviceObject VulkanRenderer::CreateImage(const ImageDesc& desc)
 }
 
 void VulkanRenderer::CreateTexture(const ImageDesc& desc, const SamplerDesc& samplerDesc, DeviceObject& texture)
-{    
-    if(desc.memoryUsage & MemoryType::DeviceLocal)
+{
+    const VkMemoryPropertyFlags vulkanMemoryType = ConvertType(desc.memoryUsage);
+    if(vulkanMemoryType & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
     {
         constexpr auto stagingBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         constexpr auto stagingMemoryType = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -1219,7 +1221,7 @@ VkImageView VulkanRenderer::CreateImageView(const VkImage& image, const VkFormat
     return imageView;
 }
 
-VulkanAttachmentDeviceObject VulkanRenderer::CreateAttachment(const uint32_t width, const uint32_t height, const Format format, const ImageUsage usage)
+VulkanAttachmentDeviceObject VulkanRenderer::CreateAttachment(const uint32_t width, const uint32_t height, const Format format, Core::FlagMask<ImageUsage> usage)
 {    
     const VkFormat vulkanImageFormat = ConvertType(format);
     

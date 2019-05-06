@@ -60,6 +60,7 @@ set(PRIVATE_SOURCES
     Private/DeviceObjectImpl.cpp
     Private/VertexBuffer.cpp
     Private/Image.cpp
+    Private/SharedDeviceTypes.cpp
     Private/Vulkan/VulkanCommandBuffer.h
     Private/Vulkan/VulkanCommandBuffer.cpp
     Private/Vulkan/VulkanRendererImpl.h

@@ -12,6 +12,8 @@
 
 #include <string>
 
+#include <Renderer/Resources/Types.h>
+
 namespace Renderer
 {
 	enum class DeviceType

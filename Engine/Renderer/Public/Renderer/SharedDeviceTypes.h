@@ -48,10 +48,7 @@ namespace Graphics
 }
 
 namespace Renderer
-{
-    using SummitBufferId = struct { uint32_t id{ 0 }; };
-    using SummitImageId = struct { uint32_t id{ 0 }; };
-    
+{    
     template<typename T>
     struct Rectangle
     {
@@ -66,34 +63,43 @@ namespace Renderer
         Vector2<T> offset{ 0, 0 };
     };
     
-    enum class ImageUsage : uint32_t
+    /*!
+     @brief Mask of image usage property flags.
+     */
+    enum class ImageUsage
     {
-        Undefined = 0x00000000,
-        Sampled = 0x00000001,
-        ColorAttachment = 0x00000010,
-        DepthStencilAttachment = 0x00000100
+        Sampled,
+        ColorAttachment,
+        DepthStencilAttachment,
+        FlagMaskSize
     };
     
-    enum class AccessMask : uint32_t
+    /*!
+     @brief Mask of pipeline access property flags.
+     */
+    enum class AccessMask
     {
-        Undefined           = 0x00000000,
-        DepthStencilRead    = 0x00000001,
-        DepthStencilWrite   = 0x00000002,
-        ColorRead           = 0x00000004,
-        ColorWrite          = 0x00000008,
-        InputRead           = 0x00000010,
-        MemoryRead          = 0x00000020,
-        ShaderRead          = 0x00000040
+        DepthStencilRead,
+        DepthStencilWrite,
+        ColorRead,
+        ColorWrite,
+        InputRead,
+        MemoryRead,
+        ShaderRead,
+        FlagMaskSize
     };
     
-    enum class StageMask : uint32_t
+    /*!
+     @brief Mask of pipeline stage property flags.
+     */
+    enum class StageMask
     {
-        Undefined           = 0x00000000,
-        EarlyFragmentTest   = 0x00000001,
-        LateFragmentTest    = 0x00000002,
-        ColorAttachment     = 0x00000004,
-        FragmentShader      = 0x00000008,
-        BottomOfPipe        = 0x00000010,
+        EarlyFragmentTest,
+        LateFragmentTest,
+        ColorAttachment,
+        FragmentShader,
+        BottomOfPipe,
+        FlagMaskSize
     };
     
     enum class ImageLayout
@@ -106,12 +112,15 @@ namespace Renderer
         DepthStencilReadOnly,
     };
     
-    enum MemoryType : uint32_t
+    /*!
+     @brief Mask of memory property flags.
+     */
+    enum class MemoryType
     {
-        Undefined = 0x00000000,
-        DeviceLocal = 0x00000001,
-        HostVisible = 0x00000002,
-        HostCoherent = 0x00000004
+        DeviceLocal,
+        HostVisible,
+        HostCoherent,
+        FlagMaskSize
     };
     
     enum class Format
@@ -167,7 +176,3 @@ namespace Renderer
         }
     }
 }
-
-template<> struct Bitmask<Renderer::ImageUsage> : std::true_type{};
-template<> struct Bitmask<Renderer::AccessMask> : std::true_type{};
-template<> struct Bitmask<Renderer::StageMask> : std::true_type{};

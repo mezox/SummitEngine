@@ -4,25 +4,18 @@ using namespace Renderer;
 
 namespace
 {
-    bool IsAttachmentType(const ImageUsage usage)
+    bool IsAttachmentType(const Core::FlagMask<ImageUsage> usage)
     {
-        if(usage & ImageUsage::ColorAttachment || usage & ImageUsage::DepthStencilAttachment)
-        {
+        if(usage.IsSet(ImageUsage::ColorAttachment) || usage.IsSet(ImageUsage::DepthStencilAttachment))
             return true;
-        }
         
         return false;
     }
     
-    constexpr AttachmentType ToAttachmentType(const ImageUsage usage)
+    constexpr AttachmentType ToAttachmentType(const Core::FlagMask<ImageUsage> usage)
     {
-        switch (usage)
-        {
-            case ImageUsage::ColorAttachment: return AttachmentType::Color;
-            case ImageUsage::DepthStencilAttachment: return AttachmentType::DepthStencil;
-            default:
-                return AttachmentType::Undefined;
-        }
+        if(usage.IsSet(ImageUsage::ColorAttachment)) return AttachmentType::Color;
+        if(usage.IsSet(ImageUsage::DepthStencilAttachment)) return AttachmentType::DepthStencil;
         
         return AttachmentType::Undefined;
     }
@@ -52,7 +45,7 @@ Format Attachable::GetFormat() const noexcept
     return mDescriptor.format;
 }
 
-ImageUsage Attachable::GetUsage() const noexcept
+Core::FlagMask<ImageUsage> Attachable::GetUsage() const noexcept
 {
     return mDescriptor.usage;
 }

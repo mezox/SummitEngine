@@ -4,6 +4,7 @@
 
 #include <Renderer/RendererBase.h>
 #include <Renderer/SharedDeviceTypes.h>
+#include <Core/FlagMask.h>
 
 #include <vector>
 #include <memory>
@@ -45,7 +46,7 @@ namespace Renderer
         /*!
          @brief Usage of underlying image. Undefined by default.
          */
-        ImageUsage usage{ ImageUsage::Undefined };
+        Core::FlagMask<ImageUsage> usage;
     };
     
     /*!
@@ -93,7 +94,7 @@ namespace Renderer
         /*!
          @brief Returns usage of underlying image.
          */
-        [[nodiscard]] ImageUsage GetUsage() const noexcept;
+        [[nodiscard]] Core::FlagMask<ImageUsage> GetUsage() const noexcept;
         
     private:
         /*!

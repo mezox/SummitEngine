@@ -6,6 +6,8 @@
 #include "Resources/Framebuffer.h"
 
 #include <Event/Signal.h>
+#include <Core/FlagMask.h>
+
 #include <initializer_list>
 
 namespace Renderer
@@ -23,10 +25,10 @@ namespace Renderer
     {
         uint32_t srcIdx{ 0 };
         uint32_t dstIdx{ 0 };
-        StageMask srcStageMask{ StageMask::Undefined };
-        StageMask dstStageMask{ StageMask::Undefined };
-        AccessMask srcAccessMask{ AccessMask::Undefined };
-        AccessMask dstAccessMask{ AccessMask::Undefined };
+        Core::FlagMask<StageMask> srcStageMask;
+        Core::FlagMask<StageMask> dstStageMask;
+        Core::FlagMask<AccessMask> srcAccessMask;
+        Core::FlagMask<AccessMask> dstAccessMask;
     };
     
     struct AttachmentRef

@@ -7,6 +7,7 @@
 #include <Math/Vector2.h>
 #include <Math/Vector3.h>
 #include <PAL/RenderAPI/Vulkan/VulkanAPI.h>
+#include <Core/FlagMask.h>
 
 #include <array>
 #include <memory>
@@ -30,7 +31,7 @@ namespace Renderer
     struct RENDERER_API BufferDesc
     {
         BufferUsage usage;
-        MemoryType memoryUsage;
+        Core::FlagMask<MemoryType> memoryUsage;
         uint32_t bufferSize{ 0 };
         void* data{ nullptr };
     };
@@ -79,7 +80,7 @@ namespace Renderer
         StreamData mStreamData;
         bool mIsCommited{ false };
         bool mIsDiscarded{ false };
-        MemoryType mMemoryType;
+        Core::FlagMask<MemoryType> mMemoryType;
         VertexDataInputRate mInputRate{ VertexDataInputRate::Vertex };
         BufferUsage mDataType{ BufferUsage::VertexBuffer };
     };
